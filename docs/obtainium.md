@@ -1,0 +1,101 @@
+# Installing and maintaining G-Stop with Obtainium
+
+[Obtainium](https://github.com/ImranR98/Obtainium) installs Android apps straight from their
+source — a GitHub repository, in this case — and then watches for new releases and tells you when
+one appears. It is the closest thing to a Play Store update flow for a side-loaded app, without a
+store, an account, or anything phoning home about you.
+
+It suits G-Stop exactly: the app is deliberately outside the Play Store, and this repository
+publishes each version as a GitHub release with the APK attached.
+
+## 1. Install Obtainium itself
+
+Obtainium is not on the Play Store either. Get it from one of:
+
+- **F-Droid** — add the [Obtainium F-Droid repo](https://apt.izzysoft.de/fdroid/index/apk/dev.imranr.obtainium)
+  (IzzyOnDroid), or
+- **Directly** — download the latest APK from
+  <https://github.com/ImranR98/Obtainium/releases> and open it on the phone.
+
+Android will ask whether your browser or file manager may install unknown apps. Allow it for that
+one app; you can revoke it afterwards.
+
+Obtainium can keep itself updated once installed — it adds itself as its own first source.
+
+## 2. Add G-Stop as a source
+
+1. Open Obtainium and tap **Add App**.
+2. In **App Source URL**, paste:
+
+   ```
+   https://github.com/mi3law/G-Stop
+   ```
+
+3. Obtainium recognises it as a GitHub source and fills in the rest. Leave the defaults alone
+   with two exceptions worth setting:
+
+   | Setting | Value | Why |
+   |---|---|---|
+   | **Include prereleases** | off | Releases here are tagged `v1.0`, `v1.1`, … and are not prereleases |
+   | **APK filter (regex)** | `G-Stop-.*\.apk` | Only ever matches the app APK, even if a release later carries other assets |
+
+4. Tap **Add**. Obtainium fetches the release list and shows the latest version.
+5. Tap **Install**. Android will ask for permission to install from Obtainium — allow it.
+
+That's the whole setup. G-Stop now appears on Obtainium's home screen with its installed version
+and the latest available one.
+
+## 3. Grant G-Stop its permissions
+
+Open G-Stop once after installing. The main screen shows a card for anything the OS is
+withholding, each with a button that opens the right system page. Clear all of them:
+
+- **Alarms & reminders** (exact alarms) — the one the practice cannot do without
+- **Notifications** — needed to take over a locked screen
+- **Battery optimisation exemption** — so the schedule survives deep idle
+- **Do Not Disturb access** *(optional)* — lets the volume floor work while DND is on
+
+When they are all clear the screen reads *"Supersession checks passed."*
+
+## 4. Living with it
+
+**Update checks.** Obtainium checks on its own schedule — by default roughly every few hours in
+the background. You can change the interval in Obtainium's **Settings → Background update
+checker**, or pull down on its home screen to check immediately.
+
+**Updating.** When a new release exists, Obtainium shows the app with an update badge and (if you
+allow notifications) posts a notification. Tap the app, then **Install**. Android shows its usual
+"update this app?" dialog.
+
+**Your data survives updates.** Settings, sleep windows and the history log live in the app's own
+database and are untouched by an update, because every release is signed with the same key. This
+is why the key matters — see the warning below.
+
+**Background installs (optional).** Obtainium can install updates silently if you grant it the
+`INSTALL_PACKAGES` permission via shizuku or a rooted device. Not necessary, and for this app
+probably not desirable: an update replacing the app cancels its armed alarm until the app next
+regenerates, so you want to know when it happened.
+
+**Verifying a stop still fires after an update.** After any update, the app regenerates its
+schedule the first time it is opened or at the next midnight rollover. If you want to be certain,
+open the app once — that alone re-arms the schedule.
+
+## 5. If an update refuses to install
+
+Android will reject an update signed with a different key than the installed version, usually
+with *"App not installed"* or a signature-mismatch error. That should never happen if releases
+are produced by `release.ps1`, which always uses the same keystore.
+
+If it ever does, the only remedy is to uninstall G-Stop and install fresh — **which deletes your
+history log and settings**. So:
+
+> Back up `keystore/gstop-release.jks` and `GStopApp/keystore.properties` somewhere durable.
+> Losing them means never being able to update an installed copy of G-Stop again.
+
+A password manager or an encrypted archive is fine. They are the only two files in this project
+that cannot be reconstructed.
+
+## 6. Removing it
+
+Uninstall G-Stop like any app, and remove the source from Obtainium with a long press on the app
+card. Nothing is left behind — no account, no server-side state, nothing was ever sent anywhere.

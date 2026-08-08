@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- circle -->
+    <path
+        android:strokeColor="#FF7A1A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M28,54 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0" />
+
+    <!-- triangle 9-3-6 -->
+    <path
+        android:strokeColor="#FF7A1A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:pathData="M54,28 L76.52,67 L31.48,67 Z" />
+
+    <!-- hexad 1-4-2-8-5-7 -->
+    <path
+        android:strokeColor="#FF7A1A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:pathData="M70.71,34.08 L62.89,78.43 L79.6,49.48 L37.29,34.08 L45.11,78.43 L28.4,49.48 Z" />
+</vector>

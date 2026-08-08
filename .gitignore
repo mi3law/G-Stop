@@ -1,0 +1,25 @@
+# --- signing secrets: never publish these ---
+keystore/
+keystore.properties
+*.jks
+*.keystore
+PASSWORD.txt
+
+# --- build output ---
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# --- machine-local ---
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+captures/
+.externalNativeBuild/
+.cxx/

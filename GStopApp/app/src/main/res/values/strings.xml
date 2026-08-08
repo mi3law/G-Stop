@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">G-Stop</string>
+
+    <string name="channel_stop_name">Stops</string>
+    <string name="channel_stop_desc">The stop command. Must be allowed to interrupt.</string>
+    <string name="channel_status_name">Status</string>
+    <string name="channel_status_desc">Quiet notices about scheduling and permissions.</string>
+
+    <string name="stop_notification_title">Stop</string>
+</resources>
