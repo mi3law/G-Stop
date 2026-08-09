@@ -23,6 +23,16 @@
     <!-- Lets the app verify that DND permits alarms, and raise the alarm stream while DND is on. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
+    <!-- The record of a stop: three front-camera frames, and a spoken observation afterwards.
+         Both are optional at runtime — a refusal costs the record, never the stop. Nothing is
+         written anywhere but the app's private storage, and there is no network permission at
+         all for any of it to leave by. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -56,6 +66,15 @@
             android:noHistory="true"
             android:taskAffinity=".stop"
             android:theme="@style/Theme.GStop.Stop" />
+
+        <!-- The five minutes after a stop. Its own task so that leaving it does not drop the
+             user into whatever screen the app happened to be showing before the stop. -->
+        <activity
+            android:name=".ui.ObservationActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:label="@string/observation_label"
+            android:theme="@style/Theme.GStop" />
 
         <service
             android:name=".schedule.StopService"

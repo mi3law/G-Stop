@@ -34,7 +34,15 @@ Non-goals: social features, accounts, cloud sync, gamification, streaks, or any 
 - **Pause/resume (global):** behaves as an ad-hoc sleep window; paused time does not exist on the active timeline; resume triggers regeneration. One tap from the app's main screen; also exposed as a home-screen widget/quick-settings tile if cheap to build.
 - **Unsafe-context suppress (per-stop):** during a stop, a single deliberate gesture (e.g., long-press) silences that stop without ending the schedule. Recorded as "suppressed," never as failure.
 
-**History (lightweight).** A local log of stop events (fired / suppressed) and pause/resume toggles, visible to the user. Purpose is honest self-observation — particularly of pause-button usage, which is the built-in escape hatch back into self-administered stopping. No analytics, no scores.
+**The record of a stop.** A stop photographs itself: three frames from the front camera, at the beginning, the middle and the end of the drawn duration. Nothing about this is visible during the stop — no preview, no shutter sound of the app's own making, no change to the black screen — and the frames never leave the app's private storage. The camera is optional at runtime: a refusal, a phone with no front camera, or a stop screen the OS declined to show costs the record, never the stop.
+
+**Observation (post-stop, five minutes).** When a stop releases, a five-minute window opens in which the practitioner may note the stop: three short free-text fields — **Movement**, **Feeling**, **Thinking** — and a voice note, all optional. The observation page also shows the three photographs. The window is entered directly from the stop screen when the phone is unlocked, and from a quiet notice that expires with the window otherwise. When the window closes the observation becomes read-only: a stop is observed then, or not at all. A suppressed stop opens no window.
+
+**Three kinds of stop.** The practice recognises exactly three, and History speaks in them: **Stop suppressed**, **Stop**, and **Stop, noted** — the last being a stop with at least one field or a voice note filled in.
+
+**History.** Every stop that actually happened, newest first, in those three kinds. Opening one shows its three photographs and whatever was noted about it. A record, not a score: no streaks, no totals, no comparison between days — and still no schedule, since a stop appears only once it has occurred.
+
+**Logs (lightweight).** A local log of app events — stops fired / suppressed / noted, pause and resume toggles, regenerations, reboots, permission warnings. Purpose is honest self-observation — particularly of pause-button usage, which is the built-in escape hatch back into self-administered stopping. No analytics, no scores. Reached from Settings; History is the screen the practice itself uses.
 
 ## 3. Platform and infrastructure
 
@@ -50,7 +58,8 @@ Rationale: Android treats alarm-clock behavior as a first-class, sanctioned capa
 - **Volume floor:** on stop delivery, programmatically raise the alarm-stream volume to a configurable minimum if the user has zeroed it, restoring it afterward. A silent alarm stream must not silently defeat the practice.
 - **Locked-screen delivery:** full-screen intent (`USE_FULL_SCREEN_INTENT`) + turn-screen-on flags so a stop lights and occupies the lock screen.
 - **Survival:** `RECEIVE_BOOT_COMPLETED` receiver to regenerate and reschedule after reboot; listen for timezone/clock changes and regenerate; prompt the user once to exempt the app from battery optimization.
-- **Persistence:** all state (settings, current day's drawn schedule, history log) in local storage (Room/DataStore). The drawn schedule must never be displayed.
+- **Persistence:** all state (settings, current day's drawn schedule, log, observations) in local storage (Room/DataStore). The drawn schedule must never be displayed.
+- **Stop photographs:** the camera is bound to the *stop screen*, never to the foreground service. Camera access is a while-in-use permission, and a visible activity is the one place the app reliably holds it; a service started from an alarm is not. Photographs and voice notes are written to app-private storage only — never MediaStore, never a shared directory, never a backup.
 
 **Stack:** native Kotlin recommended for direct access to the alarm/audio APIs. A cross-platform framework is acceptable only if the above APIs are reached natively via plugins without compromise; do not trade supersession reliability for framework convenience.
 
@@ -64,13 +73,18 @@ The viable iPhone route is a **minimal server that places a phone call** at each
 
 ## 5. MVP scope
 
-MVP: the scheduler on the active timeline, all four parameter groups, sleep windows, pause/resume, unsafe suppress, command/release sounds with supersession (alarm stream + exact alarms + boot/timezone regeneration), and the local history log. That is the complete practice loop.
+MVP: the scheduler on the active timeline, all four parameter groups, sleep windows, pause/resume, unsafe suppress, command/release sounds with supersession (alarm stream + exact alarms + boot/timezone regeneration), and the local log. That is the complete practice loop.
 
-Deferred: quick-settings tile/widget, motion/driving auto-suppress, DND-policy override, custom sound import, any settings web surface.
+Shipped after MVP: the three stop photographs, the five-minute observation window, and the History screen.
+
+Deferred: quick-settings tile/widget, motion/driving auto-suppress, DND-policy override, custom sound import, any settings web surface, export of observations.
 
 ## 6. Resolved decisions
 
 1. **Stop screen:** pure black background; an enneagram rendered in bright orange stroke; the Arabic phrase اُذْكُرِ اللَّهَ centered inside the enneagram in green. No timer, no progress indicator, no interactive elements beyond the unsafe-suppress gesture.
 2. **Volume floor:** user-configurable. May later move to an advanced-settings page — both to group similar expert settings and to keep escape hatches out of casual reach.
-3. **History:** unbounded local log.
+3. **Logs:** unbounded local log, never trimmed automatically. Distinct from History, which is the record of stops themselves.
 4. **Sampling scheme: count-first placement.** Draw the day's count N uniformly between the user's min–max, then place N points uniformly at random on the active timeline with the minimum gap enforced by the standard transformation: shrink the timeline by the total reserved gap time ((N−1) × min-gap), scatter N points uniformly, sort them, then re-expand by adding back the cumulative gap offsets. If the active day is too short to fit N stops at the minimum gap, clip N to the maximum feasible. Regeneration (pause→resume, mid-day settings edits, reboot, timezone change) re-runs the same procedure on the remaining active timeline, with the count redrawn in proportion to the remaining active time. No rejection loops; the drawn schedule is never displayed. This refines the exponential-gap phrasing in `stop_app_duration_frequency.md`: the anticipation hazard that motivated exponential gaps was a *maximum* gap acting as a learnable deadline, and count-first placement has no maximum gap — it is statistically a Poisson process conditioned on its (hidden) count, so unpredictability is fully preserved.
+5. **Observation window: five minutes, then closed.** Long enough to write three words and say a sentence, short enough that the observation is of the stop rather than a reconstruction of it. The fields go read-only rather than the screen closing itself, so a half-typed line is never snatched away — but nothing new may be added. Editing an old observation from History is deliberately impossible.
+6. **A suppressed stop is never "noted."** Suppression ends the episode; the three labels stay mutually exclusive, and History never has to arbitrate between them.
+7. **Photographs are taken by the stop screen, not the service.** See §3. The consequence is honest and worth stating: if the full-screen intent does not show — notifications blocked, an OEM lock screen that refuses it — the stop still sounds and still ends, and simply goes unphotographed.

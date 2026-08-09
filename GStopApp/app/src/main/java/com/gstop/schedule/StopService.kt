@@ -16,8 +16,11 @@ import android.os.PowerManager
 import android.util.Log
 import com.gstop.R
 import com.gstop.data.HistoryType
+import com.gstop.data.ObservationEntity
 import com.gstop.data.Repository
 import com.gstop.data.StopStatus
+import com.gstop.media.PhotoSlot
+import com.gstop.ui.ObservationActivity
 import com.gstop.ui.StopActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +45,9 @@ class StopService : Service() {
     private var stopId: Long = -1L
     private var releaseRunnable: Runnable? = null
     private var finished = false
+    private var photosEnabled = false
+    /** Set on release, cleared on suppression: only a stop that ran its course is observable. */
+    private var releasedAtMs: Long? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -81,8 +87,10 @@ class StopService : Service() {
 
             handler.post {
                 audio.applyVolumeFloor(settings.volumeFloorPercent)
-                StopSession.begin(id)
+                photosEnabled = settings.photosEnabled
+                StopSession.begin(id, settings.photosEnabled)
                 audio.playCommand(settings.commandSoundUri)
+                scheduleCaptures(id, durationMs)
 
                 val runnable = Runnable { release(settings.releaseSoundUri) }
                 releaseRunnable = runnable
@@ -91,11 +99,37 @@ class StopService : Service() {
         }
     }
 
+    /**
+     * The beginning, the middle and the end. Timed here because the service is the only party that
+     * knows the duration — the stop screen, which actually holds the camera, must not learn it.
+     *
+     * The last frame is asked for a moment early so it is on disk before the release tears the
+     * screen down; a photograph of the very last instant is not worth losing the photograph.
+     */
+    private fun scheduleCaptures(id: Long, durationMs: Long) {
+        if (!photosEnabled) return
+        handler.postDelayed(
+            { StopSession.requestCapture(id, PhotoSlot.BEGIN) },
+            BEGIN_CAPTURE_DELAY_MS.coerceAtMost(durationMs / 4)
+        )
+        handler.postDelayed({ StopSession.requestCapture(id, PhotoSlot.MIDDLE) }, durationMs / 2)
+        handler.postDelayed(
+            { StopSession.requestCapture(id, PhotoSlot.END) },
+            (durationMs - END_CAPTURE_LEAD_MS).coerceAtLeast(durationMs * 3 / 4)
+        )
+    }
+
     /** The release signal: the stop ends from outside, never by the user's decision. */
     private fun release(releaseUri: String?) {
         if (finished) return
         finished = true
+        val endedAt = System.currentTimeMillis()
+        releasedAtMs = endedAt
         Log.i(TAG, "stop $stopId released")
+        // Written now rather than at teardown, so the window is already open by the time the
+        // stop screen hands over to it.
+        val id = stopId
+        scope.launch { Repository.get(this@StopService).openObservationWindow(id, endedAt) }
         audio.stop()
         audio.playRelease(releaseUri) { finish() }
         // Do not wait forever on a broken player.
@@ -131,7 +165,12 @@ class StopService : Service() {
 
         val appContext = applicationContext
         val id = stopId
+        val endedAt = releasedAtMs
         scope.launch {
+            if (endedAt != null) {
+                Repository.get(appContext).openObservationWindow(id, endedAt)
+                handler.post { postObserveNotice(appContext, id) }
+            }
             try {
                 ScheduleManager.armNext(appContext)
             } catch (e: Exception) {
@@ -142,6 +181,32 @@ class StopService : Service() {
                 stopForegroundCompat()
                 stopSelf()
             }
+        }
+    }
+
+    /**
+     * The way back into a stop that ended behind a locked screen or in a pocket. Quiet by
+     * channel, and it expires with the window rather than lingering as a reproach.
+     */
+    private fun postObserveNotice(context: Context, stopId: Long) {
+        if (ObservationActivity.isShowing(stopId)) return
+        val open = PendingIntent.getActivity(
+            context,
+            stopId.toInt(),
+            ObservationActivity.intent(context, stopId),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val notification = Notification.Builder(context, CHANNEL_STATUS)
+            .setSmallIcon(R.drawable.ic_stat_stop)
+            .setContentTitle(context.getString(R.string.observe_notification_title))
+            .setContentText(context.getString(R.string.observe_notification_text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setTimeoutAfter(ObservationEntity.WINDOW_MS)
+            .build()
+        runCatching {
+            context.getSystemService(NotificationManager::class.java)
+                ?.notify(ObservationActivity.OBSERVE_NOTIF_ID, notification)
         }
     }
 
@@ -200,6 +265,13 @@ class StopService : Service() {
         private const val NOTIF_ID = 42
         private const val RELEASE_TAIL_MS = 8_000L
         private const val WAKE_LOCK_SLACK_MS = 30_000L
+
+        /** Long enough for the stop screen to have bound the camera, short enough to still be
+         *  the beginning; capped at a quarter of the stop for the shortest durations. */
+        private const val BEGIN_CAPTURE_DELAY_MS = 1_200L
+
+        /** The end frame is asked for this much before the release, so it lands. */
+        private const val END_CAPTURE_LEAD_MS = 700L
 
         fun beginIntent(context: Context, stopId: Long, durationMs: Long): Intent =
             Intent(context, StopService::class.java).apply {

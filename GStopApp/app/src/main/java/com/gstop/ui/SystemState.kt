@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.gstop.media.SelfieCapture
 import com.gstop.schedule.ScheduleManager
 
 /**
@@ -20,7 +21,9 @@ data class SupersessionState(
     val notifications: Boolean,
     val batteryUnrestricted: Boolean,
     val dndAllowsAlarms: Boolean,
-    val dndPolicyAccess: Boolean
+    val dndPolicyAccess: Boolean,
+    /** Not a supersession matter: without it a stop still happens, it just goes unphotographed. */
+    val camera: Boolean
 ) {
     val allGood: Boolean
         get() = exactAlarms && notifications && batteryUnrestricted && dndAllowsAlarms
@@ -33,7 +36,8 @@ object SystemState {
         notifications = hasNotificationPermission(context),
         batteryUnrestricted = isIgnoringBatteryOptimizations(context),
         dndAllowsAlarms = dndAllowsAlarms(context),
-        dndPolicyAccess = hasDndPolicyAccess(context)
+        dndPolicyAccess = hasDndPolicyAccess(context),
+        camera = SelfieCapture.hasPermission(context)
     )
 
     fun hasNotificationPermission(context: Context): Boolean {
