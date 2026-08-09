@@ -4,12 +4,14 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,7 +29,7 @@ import com.gstop.schedule.StopService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-enum class Screen { MAIN, SETTINGS, HISTORY }
+enum class Screen { MAIN, SETTINGS, LOGS }
 
 class MainActivity : ComponentActivity() {
 
@@ -74,14 +76,21 @@ fun GStopApp() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // The back gesture is navigation, not exit: any screen other than the main one returns home.
+    BackHandler(enabled = screen != Screen.MAIN) { screen = Screen.MAIN }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+    ) {
         when (screen) {
             Screen.MAIN -> MainScreen(
                 onOpenSettings = { screen = Screen.SETTINGS },
-                onOpenHistory = { screen = Screen.HISTORY }
+                onOpenLogs = { screen = Screen.LOGS }
             )
             Screen.SETTINGS -> SettingsScreen(onBack = { screen = Screen.MAIN })
-            Screen.HISTORY -> HistoryScreen(onBack = { screen = Screen.MAIN })
+            Screen.LOGS -> LogsScreen(onBack = { screen = Screen.MAIN })
         }
     }
 }

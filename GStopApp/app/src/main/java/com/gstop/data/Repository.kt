@@ -68,6 +68,9 @@ class Repository(context: Context) {
     suspend fun log(type: HistoryType, atMs: Long, detail: String? = null) =
         historyDao.insert(HistoryEventEntity(atMs = atMs, type = type.name, detail = detail))
 
+    /** Manual pruning from the Logs screen; the log is never trimmed automatically. */
+    suspend fun trimHistory(keep: Int) = historyDao.trimToNewest(keep)
+
     companion object {
         @Volatile private var instance: Repository? = null
 

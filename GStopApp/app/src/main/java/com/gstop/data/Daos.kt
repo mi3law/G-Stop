@@ -80,4 +80,11 @@ interface HistoryDao {
 
     @Query("SELECT COUNT(*) FROM history")
     suspend fun count(): Int
+
+    /** Keeps the [keep] newest events and deletes everything older. */
+    @Query(
+        "DELETE FROM history WHERE id NOT IN " +
+            "(SELECT id FROM history ORDER BY atMs DESC, id DESC LIMIT :keep)"
+    )
+    suspend fun trimToNewest(keep: Int)
 }

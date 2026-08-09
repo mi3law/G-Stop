@@ -58,16 +58,17 @@ with `USAGE_ALARM` (unaffected by ringer silent mode, passes DND under the alarm
 shown over the lock screen with a full-screen intent, and backed by a configurable volume floor
 that raises a zeroed alarm stream for the stop and restores it afterwards.
 
-**The schedule is never displayed.** Not on the main screen, not in history, not during a stop.
-The history log records that a stop happened, never that one is coming.
+**The schedule is never displayed.** Not on the main screen, not in the logs, not during a stop.
+The log records that a stop happened, never that one is coming.
 
 **Controls.** A global pause/resume that behaves as an ad-hoc sleep window, and a per-stop
 suppress — a long press during a stop — for moments when freezing would be dangerous. Suppression
 is recorded as "suppressed", never as failure.
 
-**History.** An unbounded local log of stops, suppressions and pause/resume toggles. Pause events
+**Logs.** An unbounded local log of stops, suppressions and pause/resume toggles. Pause events
 are logged deliberately: the pause button is the escape hatch back into self-administered
-stopping, and seeing your own use of it is part of the practice.
+stopping, and seeing your own use of it is part of the practice. Nothing is pruned automatically;
+the Logs screen has a Clear button that keeps the ten most recent events.
 
 ## Parameters
 
@@ -101,9 +102,9 @@ deliberately untracked. See [docs/releasing.md](docs/releasing.md).
 ```
 GStopApp/app/src/main/java/com/gstop/
   core/       pure Kotlin, no Android — the whole scheduling model, fully unit-tested
-  data/       Room: settings, sleep windows, the drawn schedule, the history log
+  data/       Room: settings, sleep windows, the drawn schedule, the event log
   schedule/   alarms, the foreground service that owns a stop, audio and the volume floor
-  ui/         Compose: the stop screen, main, settings, history
+  ui/         Compose: the stop screen, main, settings, logs
 docs/         design documents, the release process, the Obtainium walkthrough
 ```
 
