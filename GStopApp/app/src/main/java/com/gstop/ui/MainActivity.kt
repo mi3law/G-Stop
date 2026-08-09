@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,7 +30,17 @@ import com.gstop.schedule.StopService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-enum class Screen { MAIN, SETTINGS, LOGS }
+/**
+ * A shallow stack rather than a flat set of screens: Logs now hangs off Settings, and a stop's
+ * observation hangs off History, so Back has to mean "one step up", not "home".
+ */
+sealed interface Screen {
+    data object Main : Screen
+    data object Settings : Screen
+    data object Logs : Screen
+    data object History : Screen
+    data class Observation(val stopId: Long) : Screen
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -50,7 +61,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun GStopApp() {
-    var screen by remember { mutableStateOf(Screen.MAIN) }
+    val stack = remember { mutableStateListOf<Screen>(Screen.Main) }
+    val screen = stack.last()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // First launch: seed defaults and draw today's schedule.
@@ -76,21 +88,37 @@ fun GStopApp() {
         }
     }
 
-    // The back gesture is navigation, not exit: any screen other than the main one returns home.
-    BackHandler(enabled = screen != Screen.MAIN) { screen = Screen.MAIN }
+    // The back gesture is navigation, not exit: it walks one step back up the stack.
+    BackHandler(enabled = stack.size > 1) { stack.removeAt(stack.lastIndex) }
+
+    fun open(next: Screen) = stack.add(next)
+    fun back() = stack.removeAt(stack.lastIndex)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        when (screen) {
-            Screen.MAIN -> MainScreen(
-                onOpenSettings = { screen = Screen.SETTINGS },
-                onOpenLogs = { screen = Screen.LOGS }
+        when (val current = screen) {
+            Screen.Main -> MainScreen(
+                onOpenSettings = { open(Screen.Settings) },
+                onOpenHistory = { open(Screen.History) }
             )
-            Screen.SETTINGS -> SettingsScreen(onBack = { screen = Screen.MAIN })
-            Screen.LOGS -> LogsScreen(onBack = { screen = Screen.MAIN })
+            Screen.Settings -> SettingsScreen(
+                onBack = { back() },
+                onOpenLogs = { open(Screen.Logs) }
+            )
+            Screen.Logs -> LogsScreen(onBack = { back() })
+            Screen.History -> HistoryScreen(
+                onBack = { back() },
+                onOpenStop = { open(Screen.Observation(it)) }
+            )
+            is Screen.Observation -> ObservationScreen(
+                stopId = current.stopId,
+                title = "Observation",
+                backLabel = "Back",
+                onBack = { back() }
+            )
         }
     }
 }

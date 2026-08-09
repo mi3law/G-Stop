@@ -142,6 +142,7 @@ private fun LogRow(event: HistoryEventEntity) {
 private fun label(type: HistoryType?, raw: String): String = when (type) {
     HistoryType.STOP_FIRED -> "Stop"
     HistoryType.STOP_SUPPRESSED -> "Stop suppressed"
+    HistoryType.STOP_NOTED -> "Stop, noted"
     HistoryType.STOP_MISSED -> "Stop missed"
     HistoryType.PAUSED -> "Paused"
     HistoryType.RESUMED -> "Resumed"
@@ -156,6 +157,7 @@ private fun label(type: HistoryType?, raw: String): String = when (type) {
 @Composable
 private fun colorFor(type: HistoryType?): Color = when (type) {
     HistoryType.STOP_FIRED -> MaterialTheme.colorScheme.secondary
+    HistoryType.STOP_NOTED -> MaterialTheme.colorScheme.primary
     HistoryType.STOP_SUPPRESSED, HistoryType.STOP_MISSED -> MaterialTheme.colorScheme.primary
     HistoryType.PAUSED, HistoryType.RESUMED -> MaterialTheme.colorScheme.onSurface
     else -> MaterialTheme.colorScheme.onSurfaceVariant

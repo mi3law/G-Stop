@@ -71,6 +71,39 @@ interface ScheduledStopDao {
 }
 
 @Dao
+interface ObservationDao {
+    @Query("SELECT * FROM observations WHERE stopId = :stopId")
+    fun observe(stopId: Long): Flow<ObservationEntity?>
+
+    @Query("SELECT * FROM observations WHERE stopId = :stopId")
+    suspend fun byStopId(stopId: Long): ObservationEntity?
+
+    @Upsert
+    suspend fun upsert(observation: ObservationEntity)
+
+    @Query("DELETE FROM observations WHERE stopId = :stopId")
+    suspend fun delete(stopId: Long)
+
+    /**
+     * Every stop that actually happened, newest first, with whatever was noted about it.
+     * PENDING and MISSED stops are absent on purpose: History is a record of stops that occurred,
+     * and a pending row would leak a future stop time.
+     */
+    @Query(
+        "SELECT s.id AS stopId, s.triggerAtMs AS atMs, s.status AS status, " +
+            "o.movement AS movement, o.feeling AS feeling, o.thinking AS thinking, " +
+            "IFNULL(o.hasVoiceNote, 0) AS hasVoiceNote, o.endedAtMs AS endedAtMs " +
+            "FROM scheduled_stops s LEFT JOIN observations o ON o.stopId = s.id " +
+            "WHERE s.status IN ('FIRED','SUPPRESSED') " +
+            "ORDER BY s.triggerAtMs DESC, s.id DESC"
+    )
+    fun observeStopRecords(): Flow<List<StopRecord>>
+
+    @Query("UPDATE observations SET hasVoiceNote = 0")
+    suspend fun clearVoiceNoteFlags()
+}
+
+@Dao
 interface HistoryDao {
     @Query("SELECT * FROM history ORDER BY atMs DESC, id DESC")
     fun observeAll(): Flow<List<HistoryEventEntity>>

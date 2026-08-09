@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -37,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -51,6 +53,7 @@ import com.gstop.data.HistoryType
 import com.gstop.data.Repository
 import com.gstop.data.SettingsEntity
 import com.gstop.data.SleepWindowEntity
+import com.gstop.media.StopMedia
 import com.gstop.schedule.ScheduleManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,7 +74,7 @@ import kotlin.math.roundToInt
  * log line and at most one regeneration.
  */
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
     val context = LocalContext.current
     val repo = remember { Repository.get(context) }
     val scope = rememberCoroutineScope()
@@ -237,8 +240,105 @@ fun SettingsScreen(onBack: () -> Unit) {
 
         SleepWindowsSection(windows, repo, scope, context)
 
+        ObservationsSection(
+            photosEnabled = settings.photosEnabled,
+            onTogglePhotos = { enabled ->
+                save("stop photos ${if (enabled) "on" else "off"}", regenerate = false) {
+                    it.copy(photosEnabled = enabled)
+                }
+            }
+        )
+
+        SectionCard("Logs") {
+            Hint(
+                "Everything the app has done — stops, pauses, regenerations, reboots. The " +
+                    "History screen is the record of the practice; this is the record of the app."
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onOpenLogs) { Text("Open logs") }
+        }
+
         Spacer(Modifier.height(40.dp))
     }
+}
+
+/**
+ * Photographs and voice notes live only on this phone and nothing prunes them, so the size they
+ * take is shown plainly and deleting them is one deliberate act. Written observations are text
+ * and are never touched by this.
+ */
+@Composable
+private fun ObservationsSection(photosEnabled: Boolean, onTogglePhotos: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val repo = remember { Repository.get(context) }
+    val scope = rememberCoroutineScope()
+    var reload by remember { mutableStateOf(0) }
+    var confirmingDelete by remember { mutableStateOf(false) }
+
+    val bytes by produceState(initialValue = -1L, reload) {
+        val measured = withContext(Dispatchers.IO) { StopMedia.totalBytes(context) }
+        value = measured
+    }
+
+    SectionCard("Observations") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Photograph each stop", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Three front-camera frames: beginning, middle, end.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(checked = photosEnabled, onCheckedChange = onTogglePhotos)
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Text(
+            text = if (bytes < 0) "Measuring…" else "Photos and voice notes: ${formatBytes(bytes)}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        OutlinedButton(
+            onClick = { confirmingDelete = true },
+            enabled = bytes > 0
+        ) { Text("Delete all media") }
+        Hint("Written observations are kept; only the pictures and recordings are removed.")
+    }
+
+    if (confirmingDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmingDelete = false },
+            title = { Text("Delete every photo and voice note?") },
+            text = {
+                Text(
+                    "Every stop photograph and every recording is deleted from this phone and " +
+                        "cannot be recovered. What you wrote down stays."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmingDelete = false
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            StopMedia.deleteAll(context)
+                            repo.clearVoiceNoteFlags()
+                        }
+                        reload += 1
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmingDelete = false }) { Text("Keep") }
+            }
+        )
+    }
+}
+
+fun formatBytes(bytes: Long): String = when {
+    bytes <= 0 -> "none"
+    bytes < 1024 * 1024 -> "${(bytes + 1023) / 1024} KB"
+    else -> String.format(Locale.getDefault(), "%.1f MB", bytes / (1024.0 * 1024.0))
 }
 
 @Composable
@@ -419,13 +519,14 @@ private fun DayChip(day: DayOfWeek, selected: Boolean, onToggle: () -> Unit) {
 fun ScreenHeader(
     title: String,
     onBack: () -> Unit,
+    backLabel: String = "Back",
     trailing: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(onClick = onBack) { Text("Back") }
+        TextButton(onClick = onBack) { Text(backLabel) }
         Spacer(Modifier.width(8.dp))
         Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Light)
         if (trailing != null) {

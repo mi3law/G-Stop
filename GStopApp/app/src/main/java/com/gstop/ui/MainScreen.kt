@@ -1,5 +1,7 @@
 package com.gstop.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,7 +51,7 @@ import java.util.Locale
  * The controls sit on the bottom edge, within thumb reach; everything above them scrolls.
  */
 @Composable
-fun MainScreen(onOpenSettings: () -> Unit, onOpenLogs: () -> Unit) {
+fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
     val context = LocalContext.current
     val repo = remember(context) { Repository.get(context) }
     val scope = rememberCoroutineScope()
@@ -109,7 +111,7 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenLogs: () -> Unit) {
 
             Spacer(Modifier.height(28.dp))
 
-            SupersessionWarnings(system)
+            SupersessionWarnings(system, photosWanted = settings.photosEnabled)
 
             Spacer(Modifier.height(24.dp))
         }
@@ -163,18 +165,19 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenLogs: () -> Unit) {
             OutlinedButton(onClick = onOpenSettings, modifier = Modifier.weight(1f)) {
                 Text("Settings")
             }
-            OutlinedButton(onClick = onOpenLogs, modifier = Modifier.weight(1f)) {
-                Text("Logs")
+            OutlinedButton(onClick = onOpenHistory, modifier = Modifier.weight(1f)) {
+                Text("History")
             }
         }
     }
 }
 
 @Composable
-private fun SupersessionWarnings(state: SupersessionState) {
+private fun SupersessionWarnings(state: SupersessionState, photosWanted: Boolean) {
     val context = LocalContext.current
+    val cameraNeeded = photosWanted && !state.camera
 
-    if (state.allGood) {
+    if (state.allGood && !cameraNeeded) {
         Text(
             text = "Supersession checks passed.",
             style = MaterialTheme.typography.bodySmall,
@@ -182,6 +185,10 @@ private fun SupersessionWarnings(state: SupersessionState) {
         )
         return
     }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* the card re-reads its state when the activity resumes */ }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (!state.exactAlarms) {
@@ -213,6 +220,15 @@ private fun SupersessionWarnings(state: SupersessionState) {
                 body = "Total silence suppresses alarms too. Allow alarms in your DND settings.",
                 actionLabel = "DND access"
             ) { context.startActivity(SystemState.dndAccessSettings()) }
+        }
+        if (cameraNeeded) {
+            WarningCard(
+                title = "The camera is not permitted",
+                body = "Stops will happen exactly as before, but nothing will be photographed " +
+                    "and observations will have no pictures. Turn stop photos off in Settings if " +
+                    "that is what you want.",
+                actionLabel = "Allow"
+            ) { cameraLauncher.launch(android.Manifest.permission.CAMERA) }
         }
     }
 }

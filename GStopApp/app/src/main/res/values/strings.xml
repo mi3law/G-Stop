@@ -8,4 +8,8 @@
     <string name="channel_status_desc">Quiet notices about scheduling and permissions.</string>
 
     <string name="stop_notification_title">Stop</string>
+
+    <string name="observation_label">Observation</string>
+    <string name="observe_notification_title">Observe that stop</string>
+    <string name="observe_notification_text">Movement, feeling, thinking — for five minutes.</string>
 </resources>

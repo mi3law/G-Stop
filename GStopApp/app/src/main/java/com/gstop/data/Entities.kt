@@ -28,7 +28,9 @@ data class SettingsEntity(
     val paused: Boolean = false,
     val pausedAtMs: Long? = null,
     /** Set once the user has been shown the battery-optimisation prompt. */
-    val batteryPromptShown: Boolean = false
+    val batteryPromptShown: Boolean = false,
+    /** Whether a stop takes the three front-camera photos. Off means no camera is ever opened. */
+    val photosEnabled: Boolean = true
 ) {
     fun toSamplingParams(): SamplingParams = SamplingParams(
         countMin = countMin,
@@ -95,9 +97,70 @@ data class ScheduledStopEntity(
     val status: String = StopStatus.PENDING.name
 )
 
+/**
+ * What the user wrote down in the five minutes after a stop released. One row per stop that ran
+ * its course; the row exists from the moment the stop ends, empty, and stays empty unless the
+ * user fills something in.
+ *
+ * A stop with anything in it is a *noted* stop — that distinction is the whole point of the
+ * History screen, and it is derived here rather than stored, so it can never drift.
+ */
+@Entity(tableName = "observations")
+data class ObservationEntity(
+    @PrimaryKey val stopId: Long,
+    /** When the stop ended. The observation window runs for [WINDOW_MS] from here. */
+    val endedAtMs: Long,
+    val movement: String? = null,
+    val feeling: String? = null,
+    val thinking: String? = null,
+    val hasVoiceNote: Boolean = false,
+    /** First moment the observation became non-empty; null while it is still empty. */
+    val notedAtMs: Long? = null
+) {
+    val isNoted: Boolean
+        get() = hasVoiceNote ||
+            !movement.isNullOrBlank() || !feeling.isNullOrBlank() || !thinking.isNullOrBlank()
+
+    fun windowClosesAtMs(): Long = endedAtMs + WINDOW_MS
+
+    fun windowOpenAt(nowMs: Long): Boolean = nowMs < windowClosesAtMs()
+
+    companion object {
+        /** The observation window: five minutes from the release, then the stop is closed. */
+        const val WINDOW_MS = 5 * 60 * 1000L
+    }
+}
+
+/** A row of the History screen: a stop that actually happened, with whatever was noted about it. */
+data class StopRecord(
+    val stopId: Long,
+    val atMs: Long,
+    val status: String,
+    val movement: String?,
+    val feeling: String?,
+    val thinking: String?,
+    val hasVoiceNote: Boolean,
+    val endedAtMs: Long?
+) {
+    val suppressed: Boolean get() = status == StopStatus.SUPPRESSED.name
+
+    val noted: Boolean
+        get() = hasVoiceNote ||
+            !movement.isNullOrBlank() || !feeling.isNullOrBlank() || !thinking.isNullOrBlank()
+
+    /** The three kinds of stop the practice recognises. */
+    val label: String
+        get() = when {
+            suppressed -> "Stop suppressed"
+            noted -> "Stop, noted"
+            else -> "Stop"
+        }
+}
+
 enum class HistoryType {
     STOP_FIRED,
     STOP_SUPPRESSED,
+    STOP_NOTED,
     STOP_MISSED,
     PAUSED,
     RESUMED,
