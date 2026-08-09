@@ -199,6 +199,24 @@ private fun SupersessionWarnings(state: SupersessionState, photosWanted: Boolean
                 actionLabel = "Grant"
             ) { SystemState.exactAlarmSettings(context)?.let { context.startActivity(it) } }
         }
+        if (!state.canOverlay) {
+            WarningCard(
+                title = "The stop screen cannot come to the front",
+                body = "Android shows a full-screen alarm only when the phone is locked or the " +
+                    "screen is off. While you are using the phone, a stop will arrive as a " +
+                    "notification banner over whatever you are doing instead of taking the " +
+                    "screen. Allow \"display over other apps\" to fix that.",
+                actionLabel = "Allow"
+            ) { context.startActivity(SystemState.overlaySettings(context)) }
+        }
+        if (!state.fullScreenIntent) {
+            WarningCard(
+                title = "Full-screen alarms are not permitted",
+                body = "Without this the stop screen cannot take over a locked screen either. " +
+                    "The sound will still play.",
+                actionLabel = "Allow"
+            ) { SystemState.fullScreenIntentSettings(context)?.let { context.startActivity(it) } }
+        }
         if (!state.notifications) {
             WarningCard(
                 title = "Notifications are blocked",

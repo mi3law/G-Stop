@@ -27,11 +27,15 @@ The main screen shows a card for anything missing. All of them matter:
 
 1. **Alarms & reminders** (exact alarms) — without it stops are delivered inexactly.
 2. **Notifications** — needed for the full-screen intent that takes over a locked screen.
-3. **Battery optimisation exemption** — so the schedule survives deep idle.
-4. **Do Not Disturb access** (optional) — lets the volume floor work while DND is on.
-5. **Camera** — for the three photographs a stop takes of itself. Refusing it costs the
+3. **Display over other apps** — needed for a stop to take the screen while you are *using* the
+   phone. Android honours a full-screen intent only when the screen is off or the device is
+   locked; without this grant a stop arriving mid-use shows as a notification banner instead.
+4. **Full-screen alarms** (Android 14+) — a separate per-app toggle for the same intent.
+5. **Battery optimisation exemption** — so the schedule survives deep idle.
+6. **Do Not Disturb access** (optional) — lets the volume floor work while DND is on.
+7. **Camera** — for the three photographs a stop takes of itself. Refusing it costs the
    photographs and nothing else; stop photos can also be switched off in Settings.
-6. **Microphone** — asked for in context, the first time a voice note is recorded.
+8. **Microphone** — asked for in context, the first time a voice note is recorded.
 
 ## Building
 
@@ -97,6 +101,11 @@ ui/         Compose
   not during a stop. A stop appears in History only once it has occurred.
 - **The sound is the stop.** It lives in a foreground service, not the activity, so a blocked
   notification or an awkward lock screen cannot silence a stop — only make it invisible.
+- **The screen is raised twice over.** Android honours a full-screen intent only when the screen
+  is off or the device is locked; while you are using the phone it downgrades it to a banner. So
+  the service also calls `startActivity` directly. That is a background activity start, which
+  needs the user-granted "display over other apps" — hence the warning card that treats it as
+  seriously as exact alarms.
 - **The camera is bound to the stop screen, not the service.** Camera access is a while-in-use
   permission and a visible activity is the one place the app reliably holds it. The consequence is
   the mirror image of the point above: an invisible stop still sounds and still ends, and simply

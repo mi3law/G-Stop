@@ -90,12 +90,38 @@ class StopService : Service() {
                 photosEnabled = settings.photosEnabled
                 StopSession.begin(id, settings.photosEnabled)
                 audio.playCommand(settings.commandSoundUri)
+                raiseStopScreen()
                 scheduleCaptures(id, durationMs)
 
                 val runnable = Runnable { release(settings.releaseSoundUri) }
                 releaseRunnable = runnable
                 handler.postDelayed(runnable, durationMs)
             }
+        }
+    }
+
+    /**
+     * Starts the stop screen directly, rather than trusting the notification to do it.
+     *
+     * `setFullScreenIntent` is honoured only when the screen is off, the device is locked, or the
+     * user is otherwise not looking: "the system UI may choose to display a heads-up notification,
+     * instead of launching this intent, while the user is using the device." A stop that arrives
+     * as a banner over the app you are typing in is not a stop — it is a suggestion.
+     *
+     * This is a background activity start, which Android permits only for an app the user has
+     * granted "display over other apps". Without that grant the call is dropped by the system
+     * without throwing, and the notification remains the only path — which is why the main screen
+     * asks for it as loudly as it asks for exact alarms.
+     */
+    private fun raiseStopScreen() {
+        try {
+            startActivity(
+                Intent(this, StopActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "could not raise the stop screen directly: ${e.message}")
         }
     }
 
