@@ -35,7 +35,9 @@ Two facts worth knowing before you start:
 | 1.3 | Read the warning cards under the buttons | Any ungranted item shows a card with a button that opens the right system page |
 | 1.4 | Tap **Grant** on "Exact alarms are not permitted" (if shown) | System page opens; after granting and returning, the card disappears |
 | 1.5 | Tap **Exempt** on "Battery optimisation is active" | System dialog; allow. Card disappears on return |
-| 1.6 | Tap **Allow** on "The camera is not permitted" | System dialog; allow. Card disappears on return |
+| 1.6 | Tap **Allow** on "The stop screen cannot come to the front" | System page opens; allow "display over other apps". Card disappears on return |
+| 1.6a | Tap **Allow** on "Full-screen alarms are not permitted" (Android 14+ only) | System page opens; allow. Card disappears on return |
+| 1.6b | Tap **Allow** on "The camera is not permitted" | System dialog; allow. Card disappears on return |
 | 1.7 | With everything granted | Line reads "Supersession checks passed." |
 | 1.8 | Open **Settings → Logs** | Shows "Schedule regenerated" and any settings changes. No stop times are listed for stops that have not happened |
 | 1.9 | Open **History** | Empty: "No stops yet." |
@@ -44,11 +46,18 @@ Two facts worth knowing before you start:
 **Fail condition for the whole app:** if the exact-alarm card cannot be cleared, stops will be
 delivered inexactly. Fix this before trusting anything else.
 
+**Second fail condition:** if "display over other apps" cannot be granted, a stop that arrives
+while you are using the phone will show as a notification banner rather than taking the screen.
+The sound still plays and the stop is still recorded, but the screen no longer supersedes what
+you were doing, which is most of the point.
+
 ## 2. The stop event itself
 
 | # | Step | Expected |
 |---|---|---|
 | 2.1 | Wait for a stop with the phone unlocked and awake | Command sound plays; screen turns pure black with the orange enneagram and the green phrase |
+| 2.1a | **Be actively typing in another app** (Keep, a browser, a chat) when a stop arrives | The stop screen **takes the whole screen**. If you get a notification banner instead, "display over other apps" is not granted — this is the failure this row exists to catch |
+| 2.1b | Revoke "display over other apps" and repeat 2.1a | Banner only, and the main screen shows the warning card. Confirms the card is telling the truth |
 | 2.2 | During the stop, look at the screen | **No timer, no countdown, no progress bar, no buttons.** If you see any of these, the build is wrong |
 | 2.3 | Do nothing | After the hidden duration, the release sound plays — clearly different from the command — and the screen closes on its own |
 | 2.4 | Open **History** | One entry at the right time, reading "Stop" |

@@ -10,6 +10,12 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- In-use delivery. A full-screen intent is honoured only when the screen is off or the
+         device is locked; while the phone is in the user's hands Android downgrades it to a
+         banner. This grants the background activity start that lets the service raise the stop
+         screen over whatever the user is doing, which is the whole point of the exercise. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Survival. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
