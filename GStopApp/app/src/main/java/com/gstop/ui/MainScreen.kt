@@ -45,9 +45,11 @@ import java.util.Locale
 /**
  * The main screen shows practice *state* — active or paused — and nothing about the schedule.
  * No next-stop time, no count, no countdown: the drawn schedule is never displayed.
+ *
+ * The controls sit on the bottom edge, within thumb reach; everything above them scrolls.
  */
 @Composable
-fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
+fun MainScreen(onOpenSettings: () -> Unit, onOpenLogs: () -> Unit) {
     val context = LocalContext.current
     val repo = remember(context) { Repository.get(context) }
     val scope = rememberCoroutineScope()
@@ -57,7 +59,6 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -66,37 +67,52 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Light
         )
-        Spacer(Modifier.height(24.dp))
 
-        Enneagram(
-            modifier = Modifier.size(190.dp),
-            phrase = null
-        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Spacer(Modifier.height(24.dp))
 
-        Spacer(Modifier.height(28.dp))
+            Enneagram(
+                modifier = Modifier.size(190.dp),
+                phrase = null
+            )
 
-        Text(
-            text = if (settings.paused) "Paused" else "Active",
-            style = MaterialTheme.typography.titleLarge,
-            color = if (settings.paused) MaterialTheme.colorScheme.onSurfaceVariant
-            else MaterialTheme.colorScheme.secondary
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = if (settings.paused) {
-                val since = settings.pausedAtMs?.let {
-                    " since " + SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(Date(it))
-                } ?: ""
-                "Paused time does not exist on the active timeline$since."
-            } else {
-                "Stops will come without warning."
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+            Spacer(Modifier.height(28.dp))
 
-        Spacer(Modifier.height(28.dp))
+            Text(
+                text = if (settings.paused) "Paused" else "Active",
+                style = MaterialTheme.typography.titleLarge,
+                color = if (settings.paused) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.secondary
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (settings.paused) {
+                    val since = settings.pausedAtMs?.let {
+                        " since " +
+                            SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(Date(it))
+                    } ?: ""
+                    "Paused time does not exist on the active timeline$since."
+                } else {
+                    "Stops will come without warning."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(28.dp))
+
+            SupersessionWarnings(system)
+
+            Spacer(Modifier.height(24.dp))
+        }
 
         Button(
             onClick = {
@@ -147,14 +163,10 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
             OutlinedButton(onClick = onOpenSettings, modifier = Modifier.weight(1f)) {
                 Text("Settings")
             }
-            OutlinedButton(onClick = onOpenHistory, modifier = Modifier.weight(1f)) {
-                Text("History")
+            OutlinedButton(onClick = onOpenLogs, modifier = Modifier.weight(1f)) {
+                Text("Logs")
             }
         }
-
-        Spacer(Modifier.height(28.dp))
-
-        SupersessionWarnings(system)
     }
 }
 

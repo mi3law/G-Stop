@@ -35,8 +35,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,8 +62,13 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * Every edit here regenerates the remainder of the day's sampling — mid-day settings changes are
- * one of the regeneration triggers (PRD §2).
+ * Edits that change the *sampling* regenerate the remainder of the day — mid-day settings changes
+ * are one of the regeneration triggers (PRD §2). Edits that only change how a stop is delivered,
+ * the volume floor and the two tones, leave the drawn schedule alone: re-drawing it would let the
+ * user reshuffle today's stops by nudging an unrelated setting.
+ *
+ * Sliders commit on release rather than on every frame, so a single drag is one saved value, one
+ * log line and at most one regeneration.
  */
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
@@ -70,22 +78,29 @@ fun SettingsScreen(onBack: () -> Unit) {
     val settings by repo.settingsFlow.collectAsState(initial = SettingsEntity())
     val windows by repo.sleepWindowsFlow.collectAsState(initial = emptyList())
 
-    fun save(reason: String, transform: (SettingsEntity) -> SettingsEntity) {
+    fun save(
+        reason: String,
+        regenerate: Boolean = true,
+        transform: (SettingsEntity) -> SettingsEntity
+    ) {
         scope.launch {
             withContext(Dispatchers.IO) {
                 val current = repo.settings()
                 repo.saveSettings(transform(current))
                 repo.log(HistoryType.SETTINGS_CHANGED, System.currentTimeMillis(), reason)
-                ScheduleManager.regenerate(context, "settings changed: $reason")
+                if (regenerate) {
+                    ScheduleManager.regenerate(context, "settings changed: $reason")
+                }
             }
         }
     }
 
+    // Tones are delivery-only, like the volume floor: picking one leaves the schedule as drawn.
     val commandPicker = rememberRingtonePicker { uri ->
-        save("command sound") { it.copy(commandSoundUri = uri) }
+        save("command sound", regenerate = false) { it.copy(commandSoundUri = uri) }
     }
     val releasePicker = rememberRingtonePicker { uri ->
-        save("release sound") { it.copy(releaseSoundUri = uri) }
+        save("release sound", regenerate = false) { it.copy(releaseSoundUri = uri) }
     }
 
     Column(
@@ -97,19 +112,24 @@ fun SettingsScreen(onBack: () -> Unit) {
         ScreenHeader(title = "Settings", onBack = onBack)
 
         SectionCard("Stop duration") {
-            val min = settings.durationMinSec.toFloat()
-            val max = settings.durationMaxSec.toFloat()
+            var duration by remember(settings.durationMinSec, settings.durationMaxSec) {
+                mutableStateOf(
+                    settings.durationMinSec.toFloat()..settings.durationMaxSec.toFloat()
+                )
+            }
             Text(
-                "${formatSeconds(settings.durationMinSec)} – ${formatSeconds(settings.durationMaxSec)}",
+                "${formatSeconds(duration.start.roundToInt())} – " +
+                    formatSeconds(duration.endInclusive.roundToInt()),
                 style = MaterialTheme.typography.titleMedium
             )
             RangeSlider(
-                value = min..max,
-                onValueChange = { range ->
+                value = duration,
+                onValueChange = { duration = it },
+                onValueChangeFinished = {
                     save("duration") {
                         it.copy(
-                            durationMinSec = range.start.roundToInt(),
-                            durationMaxSec = range.endInclusive.roundToInt()
+                            durationMinSec = duration.start.roundToInt(),
+                            durationMaxSec = duration.endInclusive.roundToInt()
                         )
                     }
                 },
@@ -120,17 +140,21 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
 
         SectionCard("Stops per day") {
+            var count by remember(settings.countMin, settings.countMax) {
+                mutableStateOf(settings.countMin.toFloat()..settings.countMax.toFloat())
+            }
             Text(
-                "${settings.countMin} – ${settings.countMax}",
+                "${count.start.roundToInt()} – ${count.endInclusive.roundToInt()}",
                 style = MaterialTheme.typography.titleMedium
             )
             RangeSlider(
-                value = settings.countMin.toFloat()..settings.countMax.toFloat(),
-                onValueChange = { range ->
+                value = count,
+                onValueChange = { count = it },
+                onValueChangeFinished = {
                     save("stops per day") {
                         it.copy(
-                            countMin = range.start.roundToInt(),
-                            countMax = range.endInclusive.roundToInt()
+                            countMin = count.start.roundToInt(),
+                            countMax = count.endInclusive.roundToInt()
                         )
                     }
                 },
@@ -139,7 +163,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 steps = SettingsEntity.COUNT_CEILING - SettingsEntity.COUNT_FLOOR - 1
             )
             Hint(
-                if (settings.countMin == 0) {
+                if (count.start.roundToInt() == 0) {
                     "A minimum of zero allows genuinely empty days."
                 } else {
                     "Set the minimum to zero to allow empty days."
@@ -148,14 +172,18 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
 
         SectionCard("Minimum gap") {
+            var gap by remember(settings.minGapMinutes) {
+                mutableFloatStateOf(settings.minGapMinutes.toFloat())
+            }
             Text(
-                formatMinutes(settings.minGapMinutes),
+                formatMinutes((gap / 5f).roundToInt() * 5),
                 style = MaterialTheme.typography.titleMedium
             )
             Slider(
-                value = settings.minGapMinutes.toFloat(),
-                onValueChange = { v ->
-                    save("minimum gap") { it.copy(minGapMinutes = (v / 5f).roundToInt() * 5) }
+                value = gap,
+                onValueChange = { gap = it },
+                onValueChangeFinished = {
+                    save("minimum gap") { it.copy(minGapMinutes = (gap / 5f).roundToInt() * 5) }
                 },
                 valueRange = SettingsEntity.GAP_FLOOR_MIN.toFloat()..
                     SettingsEntity.GAP_CEILING_MIN.toFloat()
@@ -164,11 +192,18 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
 
         SectionCard("Volume floor") {
-            Text("${settings.volumeFloorPercent}%", style = MaterialTheme.typography.titleMedium)
+            var volume by remember(settings.volumeFloorPercent) {
+                mutableFloatStateOf(settings.volumeFloorPercent.toFloat())
+            }
+            Text("${volume.roundToInt()}%", style = MaterialTheme.typography.titleMedium)
             Slider(
-                value = settings.volumeFloorPercent.toFloat(),
-                onValueChange = { v ->
-                    save("volume floor") { it.copy(volumeFloorPercent = v.roundToInt()) }
+                value = volume,
+                onValueChange = { volume = it },
+                onValueChangeFinished = {
+                    // Delivery-only: the drawn schedule is left exactly as it is.
+                    save("volume floor", regenerate = false) {
+                        it.copy(volumeFloorPercent = volume.roundToInt())
+                    }
                 },
                 valueRange = 0f..100f
             )
@@ -180,14 +215,22 @@ fun SettingsScreen(onBack: () -> Unit) {
                 label = "Command",
                 uri = settings.commandSoundUri,
                 onPick = { commandPicker(settings.commandSoundUri) },
-                onReset = { save("command sound reset") { it.copy(commandSoundUri = null) } }
+                onReset = {
+                    save("command sound reset", regenerate = false) {
+                        it.copy(commandSoundUri = null)
+                    }
+                }
             )
             Spacer(Modifier.height(8.dp))
             SoundRow(
                 label = "Release",
                 uri = settings.releaseSoundUri,
                 onPick = { releasePicker(settings.releaseSoundUri) },
-                onReset = { save("release sound reset") { it.copy(releaseSoundUri = null) } }
+                onReset = {
+                    save("release sound reset", regenerate = false) {
+                        it.copy(releaseSoundUri = null)
+                    }
+                }
             )
             Hint("Command and release must stay clearly distinct from each other.")
         }
@@ -373,11 +416,22 @@ private fun DayChip(day: DayOfWeek, selected: Boolean, onToggle: () -> Unit) {
 // --- shared bits ---
 
 @Composable
-fun ScreenHeader(title: String, onBack: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+fun ScreenHeader(
+    title: String,
+    onBack: () -> Unit,
+    trailing: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         TextButton(onClick = onBack) { Text("Back") }
         Spacer(Modifier.width(8.dp))
         Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Light)
+        if (trailing != null) {
+            Spacer(Modifier.weight(1f))
+            trailing()
+        }
     }
     Spacer(Modifier.height(12.dp))
 }
