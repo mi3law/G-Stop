@@ -67,8 +67,20 @@ Copy-Item $apk $asset -Force
 $tag = "v$Version"
 if ([string]::IsNullOrWhiteSpace($Notes)) { $Notes = "G-Stop $Version" }
 
+# Release notes go via a file, not --notes. Windows PowerShell does not escape embedded double
+# quotes when it builds a native command line, so notes containing a quoted phrase arrive at gh
+# split into several arguments and it fails looking for an asset named after one of the words.
+$notesFile = Join-Path ([System.IO.Path]::GetTempPath()) "G-Stop-$Version-notes.md"
+Set-Content -Path $notesFile -Value $Notes -Encoding utf8
+
 Write-Host "Publishing $tag to $Repo ..." -ForegroundColor Cyan
-& gh release create $tag $asset --repo $Repo --title "G-Stop $Version" --notes $Notes --target main
-if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
+try {
+    & gh release create $tag $asset --repo $Repo --title "G-Stop $Version" `
+        --notes-file $notesFile --target main
+    if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
+}
+finally {
+    Remove-Item $notesFile -ErrorAction SilentlyContinue
+}
 
 Write-Host "Released $tag. Obtainium will offer the update on its next check." -ForegroundColor Green
