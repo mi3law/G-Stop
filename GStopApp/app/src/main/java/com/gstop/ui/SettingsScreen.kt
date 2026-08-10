@@ -1,9 +1,10 @@
 package com.gstop.ui
 
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
-import android.media.RingtoneManager
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -55,6 +57,7 @@ import com.gstop.data.SettingsEntity
 import com.gstop.data.SleepWindowEntity
 import com.gstop.media.StopMedia
 import com.gstop.schedule.ScheduleManager
+import com.gstop.schedule.StopAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,12 +102,17 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
     }
 
     // Tones are delivery-only, like the volume floor: picking one leaves the schedule as drawn.
-    val commandPicker = rememberRingtonePicker { uri ->
+    val commandPicker = rememberSoundPicker { uri ->
         save("command sound", regenerate = false) { it.copy(commandSoundUri = uri) }
     }
-    val releasePicker = rememberRingtonePicker { uri ->
+    val releasePicker = rememberSoundPicker { uri ->
         save("release sound", regenerate = false) { it.copy(releaseSoundUri = uri) }
     }
+
+    // A private player for auditioning a tone from this screen — the same alarm-stream path a
+    // real stop uses, so what you hear here is what a stop will play. Released with the screen.
+    val sampler = remember { StopAudio(context) }
+    DisposableEffect(Unit) { onDispose { sampler.stop() } }
 
     Column(
         modifier = Modifier
@@ -217,7 +225,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
             SoundRow(
                 label = "Command",
                 uri = settings.commandSoundUri,
-                onPick = { commandPicker(settings.commandSoundUri) },
+                onSample = { sampler.playCommand(settings.commandSoundUri) },
+                onPick = { commandPicker() },
                 onReset = {
                     save("command sound reset", regenerate = false) {
                         it.copy(commandSoundUri = null)
@@ -228,7 +237,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
             SoundRow(
                 label = "Release",
                 uri = settings.releaseSoundUri,
-                onPick = { releasePicker(settings.releaseSoundUri) },
+                onSample = { sampler.playRelease(settings.releaseSoundUri) },
+                onPick = { releasePicker() },
                 onReset = {
                     save("release sound reset", regenerate = false) {
                         it.copy(releaseSoundUri = null)
@@ -342,13 +352,17 @@ fun formatBytes(bytes: Long): String = when {
 }
 
 @Composable
-private fun SoundRow(label: String, uri: String?, onPick: () -> Unit, onReset: () -> Unit) {
+private fun SoundRow(
+    label: String,
+    uri: String?,
+    onSample: () -> Unit,
+    onPick: () -> Unit,
+    onReset: () -> Unit
+) {
     val context = LocalContext.current
     val name = remember(uri) {
         if (uri.isNullOrBlank()) "Bundled default"
-        else runCatching {
-            RingtoneManager.getRingtone(context, Uri.parse(uri))?.getTitle(context)
-        }.getOrNull() ?: "Custom"
+        else runCatching { displayName(context, Uri.parse(uri)) }.getOrNull() ?: "Custom"
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -362,37 +376,60 @@ private fun SoundRow(label: String, uri: String?, onPick: () -> Unit, onReset: (
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        TextButton(onClick = onSample) { Text("Sample") }
         TextButton(onClick = onPick) { Text("Change") }
         if (!uri.isNullOrBlank()) TextButton(onClick = onReset) { Text("Reset") }
     }
 }
 
-/** System alarm-tone picker. Importing arbitrary audio files is deferred (PRD §5). */
+/**
+ * Storage Access Framework audio picker.
+ *
+ * The alarm-tone picker it replaces could only reach tones the OS had registered as *alarms* —
+ * a personal recording never appeared in it, and a tone backed by external media could not be
+ * read at stop time without a broad storage permission, so the service fell back to the bundled
+ * tone and the choice looked ignored. SAF hands back a single-file `content://` URI together with
+ * a *persistable* read grant, which survives reboots and process death — so [StopService] can
+ * still open it hours later with no manifest permission at all. (PRD §5.)
+ */
 @Composable
-private fun rememberRingtonePicker(onPicked: (String?) -> Unit): (String?) -> Unit {
+private fun rememberSoundPicker(onPicked: (String?) -> Unit): () -> Unit {
+    val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val uri = result.data
-                ?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            val uri = result.data?.data
+            if (uri != null) {
+                // Without the persisted grant the URI is readable only until this Activity dies;
+                // the stop that needs it fires much later.
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+            }
             onPicked(uri?.toString())
         }
     }
-    return { existing ->
-        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
-            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select tone")
-            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
-            putExtra(
-                RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
-                existing?.let { Uri.parse(it) }
+    return {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "audio/*"
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             )
         }
         launcher.launch(intent)
     }
 }
+
+/** The human name behind a SAF document URI, for the settings row. */
+private fun displayName(context: Context, uri: Uri): String? =
+    context.contentResolver
+        .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+        ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
 
 @Composable
 private fun SleepWindowsSection(
