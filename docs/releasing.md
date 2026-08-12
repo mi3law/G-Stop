@@ -12,6 +12,32 @@ It runs the unit tests first and aborts if any fail (`-SkipTests` overrides, but
 `versionCode` is derived from the commit count so it always increases — Android refuses an update
 whose `versionCode` is not higher than the installed one.
 
+## Trying a version before publishing it
+
+A published release is permanent and everyone's Obtainium sees it, which is a heavy way to find
+out that a widget's back gesture is wrong. `-NoPublish` builds and signs exactly what would be
+published, then stops before tagging anything:
+
+```powershell
+.\release.ps1 -Version 1.3.1 -NoPublish
+```
+
+It prints the APK's path and the `adb install -r` line for it. Because it carries the same
+signature as every release, it installs **over** the copy Obtainium put on the phone and the
+practice history survives — it is the real thing, just not announced.
+
+Two things to know:
+
+- Publish afterwards from the same commit or a later one. `versionCode` follows the commit count,
+  so publishing from an *earlier* commit than the build already on the phone is a downgrade and
+  Android will refuse it.
+- Obtainium keeps its own record of what it installed. A hand-installed build can leave it briefly
+  out of step about the version on the phone; the next real release resets that.
+
+For iterating on something visible — a widget, a screen — prefer the debug build below. It sits
+alongside the real app with its own database, so nothing you do to it can touch a real practice
+log. Version numbering: patch (`1.3.1`) for fixes, minor (`1.4`) for anything new.
+
 ## Signing — the part that matters
 
 Every release must be signed with the **same key**, or the update will not install over an

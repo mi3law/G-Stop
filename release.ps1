@@ -5,10 +5,16 @@
 .EXAMPLE
     .\release.ps1 -Version 1.1
     .\release.ps1 -Version 1.2 -Notes "Fixes the volume floor under DND."
+    .\release.ps1 -Version 1.3.1 -NoPublish
 
 .NOTES
     Requires GStopApp/keystore.properties and the .jks it points at. Every release must be
     signed with that same key, or the update will not install over an existing G-Stop install.
+
+    -NoPublish builds and signs exactly what would be published and then stops, so a version can
+    be tried on the phone before anything is tagged. Because it is signed with the same key it
+    installs straight over the copy Obtainium put there, keeping the practice history — which is
+    the whole point of trying it first.
 
     Toolchain locations are taken from JAVA_HOME / ANDROID_HOME / GSTOP_GRADLE if set,
     otherwise from the defaults below.
@@ -17,7 +23,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$Notes = "",
     [string]$Repo = "mi3law/G-Stop",
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [switch]$NoPublish
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,6 +70,20 @@ if (-not (Test-Path $apk)) { throw "Expected APK not found at $apk" }
 
 $asset = Join-Path ([System.IO.Path]::GetTempPath()) "G-Stop-$Version.apk"
 Copy-Item $apk $asset -Force
+
+if ($NoPublish) {
+    $adb = if ($env:ANDROID_HOME) { Join-Path $env:ANDROID_HOME "platform-tools\adb.exe" } else { "adb" }
+    Write-Host ""
+    Write-Host "Built and signed. Nothing was tagged and nothing was published." -ForegroundColor Green
+    Write-Host "  $asset"
+    Write-Host ""
+    Write-Host "With the phone plugged in and USB debugging on, install it with:" -ForegroundColor Cyan
+    Write-Host "  & `"$adb`" install -r `"$asset`""
+    Write-Host ""
+    Write-Host "Same key as every release, so it replaces the installed copy in place and the"
+    Write-Host "practice history survives. Run without -NoPublish when you are ready to ship it."
+    return
+}
 
 $tag = "v$Version"
 if ([string]::IsNullOrWhiteSpace($Notes)) { $Notes = "G-Stop $Version" }
