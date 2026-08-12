@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The dev build's icon: the same black ground with an orange ring around the enneagram.
+
+    The ring sits at radius 33 of the 108 canvas. An adaptive icon is masked to the central 72 —
+    radius 36 — and the launcher chooses that mask's shape, so anything drawn nearer the edge than
+    this risks being shaved off on a circular mask and kept on a squircle. 33 clears the
+    enneagram, which reaches 26, and clears the mask.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M0,0 L108,0 L108,108 L0,108 Z" />
+
+    <path
+        android:strokeColor="#FF7A1A"
+        android:strokeWidth="3"
+        android:pathData="M21,54 a33,33 0 1,0 66,0 a33,33 0 1,0 -66,0" />
+</vector>

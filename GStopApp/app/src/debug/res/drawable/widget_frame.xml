@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The dev widget's orange ring. It is drawn as the view's background, so it lands in the 6dp the
+    layout holds back around the enneagram disc — no room has to be taken from the mark itself.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/transparent" />
+    <stroke
+        android:width="2dp"
+        android:color="#FF7A1A" />
+</shape>
