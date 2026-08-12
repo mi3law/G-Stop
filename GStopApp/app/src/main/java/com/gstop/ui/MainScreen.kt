@@ -107,14 +107,15 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Text(
                 text = when {
-                    settings.paused -> {
-                        val since = settings.pausedAtMs?.let {
-                            " since " +
-                                SimpleDateFormat("d MMM, HH:mm", Locale.getDefault())
-                                    .format(Date(it))
-                        } ?: ""
-                        "Paused time does not exist on the active timeline$since."
-                    }
+                    // Says what the state means for stops, like the other two. What it used to
+                    // say — that paused time does not exist on the active timeline — was true,
+                    // and belongs in Settings under the minimum gap, where that idea is in
+                    // context and has something to explain.
+                    settings.paused -> settings.pausedAtMs?.let {
+                        val at = SimpleDateFormat("d MMM, HH:mm", Locale.getDefault())
+                            .format(Date(it))
+                        "Paused since $at — no stops until you resume."
+                    } ?: "No stops until you resume."
                     asleep -> sleep.untilText
                         ?.let { "A sleep window is running — no stops until $it." }
                         ?: "A sleep window is running — no stops."
