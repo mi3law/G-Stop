@@ -1,7 +1,6 @@
 package com.gstop.widget
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.ViewConfiguration
@@ -39,9 +38,7 @@ class WidgetTapActivity : Activity() {
         if (tappedAt - previous < doubleTapMs()) {
             // The first tap's pending toggle finds the mark moved and stands down. A third tap in
             // the same flurry lands here too, which is why this does not clear the timestamp.
-            startActivity(
-                Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            startActivity(MainActivity.launchIntent(this))
         } else {
             scope.launch {
                 delay(doubleTapMs())

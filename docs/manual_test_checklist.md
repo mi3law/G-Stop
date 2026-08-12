@@ -163,6 +163,7 @@ lag.
 | 7b.4 | Tap it once | After a beat the enneagram goes dark grey. Open the app: it reads "Paused" |
 | 7b.5 | Tap it once again, then open **Logs** | Orange again; "Resumed" and "Schedule regenerated" are recorded, exactly as a tap in the app records them |
 | 7b.6 | **Double-tap it** | The app opens. **The state does not change** — it is the same colour when you come back, and the Logs show no pause or resume from that gesture. This is the row that matters most; everything below assumes it works |
+| 7b.6a | Having entered the app by double tap, swipe back once | You leave the app. Landing on the home screen a *second* time means two copies of it are stacked, which is what happens when the widget names MainActivity directly instead of asking for the launcher's own intent |
 | 7b.7 | Watch the home screen closely through a single tap | No flash, no dim, no window sliding in. The tap goes to an invisible activity, and it should stay invisible |
 | 7b.8 | Double-tap, but leave a deliberate gap between the taps | Two separate single taps: it pauses, then resumes. The gap that separates them is the system's own double-tap timeout |
 | 7b.9 | Double-tap and find the app did **not** open, or the state flipped | The second tap missed the window. Say so — the window is one constant in `WidgetTapActivity` and can be widened |

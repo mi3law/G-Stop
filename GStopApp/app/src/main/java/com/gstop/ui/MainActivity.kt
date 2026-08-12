@@ -1,6 +1,8 @@
 package com.gstop.ui
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -56,6 +58,26 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        /**
+         * The way in from outside the app — the widget's double tap, the system's alarm entry.
+         *
+         * This is deliberately the launcher's *own* intent rather than one naming MainActivity
+         * directly. `FLAG_ACTIVITY_NEW_TASK` reuses an existing task only when the new intent
+         * matches the one that started it, and the task was started by the home screen with
+         * ACTION_MAIN / CATEGORY_LAUNCHER. A bare component intent does not match, so the task
+         * comes forward with a *second* MainActivity stacked on the first — and Back then lands
+         * on the home screen again instead of leaving the app.
+         *
+         * Asking the package manager for the launcher's intent means these entrances behave
+         * exactly like tapping the icon, including leaving an open observation where it was.
+         */
+        fun launchIntent(context: Context): Intent =
+            context.packageManager.getLaunchIntentForPackage(context.packageName)
+                ?: Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 }
 

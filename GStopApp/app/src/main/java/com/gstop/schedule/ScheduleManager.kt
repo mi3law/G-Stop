@@ -155,11 +155,13 @@ object ScheduleManager {
         }
 
         // setAlarmClock: exact, wakes the device from Doze, and is not subject to the
-        // background-alarm restrictions that apply to ordinary exact alarms.
+        // background-alarm restrictions that apply to ordinary exact alarms. The show intent is
+        // the launcher's, not a bare component one, or tapping the system's alarm entry stacks a
+        // second MainActivity on the app's task — see MainActivity.launchIntent.
         val show = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, MainActivity::class.java),
+            MainActivity.launchIntent(context),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         am.setAlarmClock(AlarmManager.AlarmClockInfo(triggerAtMs, show), operation)
