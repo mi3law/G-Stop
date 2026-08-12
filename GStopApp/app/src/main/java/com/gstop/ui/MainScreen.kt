@@ -1,7 +1,10 @@
 package com.gstop.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gstop.BuildConfig
 import com.gstop.data.Repository
 import com.gstop.data.SettingsEntity
 import com.gstop.schedule.ScheduleManager
@@ -170,7 +174,55 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
                 Text("History")
             }
         }
+
+        BuildFooter()
     }
+}
+
+/** Where this build's commit can be read. */
+private const val COMMIT_URL = "https://github.com/mi3law/G-Stop/commit/"
+
+/**
+ * Which build this is, and the commit behind it — quiet enough to ignore, there when a version
+ * has to be pinned down. Tapping it opens that commit on GitHub.
+ *
+ * That is the only thing in the app that reaches the network, and it does so the way any app
+ * hands a URL to a browser: G-Stop itself still holds no network permission, makes no connection
+ * of its own, and nothing about the practice goes with it.
+ *
+ * A debug build's version already carries the sha (build.gradle.kts appends it), so it is not
+ * printed twice.
+ */
+@Composable
+private fun BuildFooter() {
+    val context = LocalContext.current
+    val sha = BuildConfig.GIT_SHA
+    val known = sha != "unknown"
+
+    val label = buildString {
+        append(BuildConfig.VERSION_NAME)
+        if (known && !BuildConfig.VERSION_NAME.endsWith(sha)) append(" · ").append(sha)
+        if (BuildConfig.GIT_DIRTY) append(" · modified")
+    }
+
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (!known) Modifier else Modifier.clickable {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(COMMIT_URL + sha))
+                        )
+                    }
+                }
+            )
+            .padding(top = 12.dp)
+    )
 }
 
 @Composable

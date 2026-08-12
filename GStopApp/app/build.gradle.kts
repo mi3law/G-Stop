@@ -14,6 +14,27 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystoreProperties.getProperty("storeFile") != null &&
     rootProject.file(keystoreProperties.getProperty("storeFile")).exists()
 
+/**
+ * Which commit a build came from, read here rather than passed in, so it is right however the
+ * build was started — release.ps1, dev.ps1 or a bare gradlew. Failures are not fatal: a source
+ * tree with no git around it still builds, and simply says "unknown".
+ */
+fun git(vararg args: String): String = try {
+    val process = ProcessBuilder(listOf("git", *args))
+        .directory(rootProject.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+    if (process.waitFor() == 0) output else ""
+} catch (e: Exception) {
+    ""
+}
+
+val gitSha: String = git("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
+
+/** True if the build carries changes that are not in that commit, so the sha alone would lie. */
+val gitDirty: Boolean = git("status", "--porcelain").isNotEmpty()
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -33,6 +54,10 @@ android {
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Read by the footer on the main screen, which links to this commit on GitHub.
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
+        buildConfigField("boolean", "GIT_DIRTY", "$gitDirty")
     }
 
     signingConfigs {
@@ -51,6 +76,8 @@ android {
             isMinifyEnabled = false
             // Lets a debug build sit alongside an installed release build.
             applicationIdSuffix = ".debug"
+            // So Android's own app list says which build is on the phone, without opening it.
+            versionNameSuffix = "-g$gitSha"
         }
         release {
             // Kept off so crash traces stay readable — there is nothing here worth obfuscating.

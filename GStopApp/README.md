@@ -51,6 +51,11 @@ Unit tests (the sampler, the active timeline, regeneration):
 ./gradlew testDebugUnitTest
 ```
 
+For the working loop — build the dev app from the current branch and put it on the phone in one
+step — use `dev.ps1` at the repository root. It installs as `com.gstop.debug`, named *G-Stop dev*
+and marked with an orange ring, so it can never be mistaken for the real app or its widget. See
+[../docs/releasing.md](../docs/releasing.md).
+
 `local.properties` points at this machine's SDK; regenerate it elsewhere.
 
 ## How it is put together

@@ -1,4 +1,44 @@
-# Releasing
+# Working on it, and releasing it
+
+## The loop
+
+One developer, one phone, no CI. The flow is therefore as short as it can be while still meaning
+something:
+
+1. Work on a branch — `git worktree` makes one free, and the repository already uses them.
+2. `.\dev.ps1` — builds the dev app from that branch and installs it on the phone.
+3. Try it. This is the review: for anything with a screen, using it catches what reading a diff
+   does not.
+4. Merge to `main` (fast-forward) and push, once it has run on the phone.
+5. Release when a batch is worth publishing — see below.
+
+**The order is the point.** `release.ps1` publishes from `main`'s tip, so `main` should mean "this
+has been on the phone", not "this compiled". Nothing installs from a branch and nothing installs
+from `main` either — Obtainium reads published releases — which is exactly what leaves `main` free
+to carry that meaning.
+
+No pull requests, deliberately. With no CI and no second reviewer a PR runs no checks and reviews
+nothing; it is a reading surface, and for an app whose failures are things like a back gesture or
+a widget that looks like the wrong app, the phone is the better one. Two PRs exist in the history
+from earlier feature batches; nothing was lost by stopping.
+
+No long-lived `dev` or `testing` branch either. It would need merging and rebasing to keep up, and
+it would put daylight between what is on the phone and what is on `main` — the same shape of
+confusion as two apps that look alike.
+
+### Telling builds apart
+
+The dev app is `com.gstop.debug`, named **G-Stop dev**, with an orange ring around its icon and
+its widget and a banner across the top of its screens. It keeps its own database, so nothing done
+to it touches a real practice log. Reinstalling over it keeps that database; only uninstalling
+clears it.
+
+Both apps carry their commit: the main screen's footer reads `1.3.1 · a1b2c3d`, tappable to open
+that commit on GitHub, and says `modified` when the build carried uncommitted changes. A dev
+build's version has the sha in it too (`1.3.1-ga1b2c3d`), so Android's own app list answers the
+question without the app being opened.
+
+## Releasing
 
 Obtainium watches this repository's GitHub releases. Publishing a new version means: build a
 signed APK, attach it to a tagged release. `release.ps1` at the repository root does both.
