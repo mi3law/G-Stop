@@ -73,6 +73,8 @@ android {
 
     buildFeatures {
         compose = true
+        // For BuildConfig.DEBUG, which the dev-build banner keys off. Off by default since AGP 8.
+        buildConfig = true
     }
 
     packaging {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only overrides. A build-type source set wins over src/main, so this renames the app
+    without touching the real one — no Gradle resValue, no duplicate resource, nothing to undo
+    before a release build.
+
+    app_name reaches further than the launcher: the activity label, and the name the widget picker
+    lists, both point at it. Renaming it here is what stops a dev widget being dropped on the home
+    screen in place of the real one.
+-->
+<resources>
+    <string name="app_name">G-Stop dev</string>
+</resources>

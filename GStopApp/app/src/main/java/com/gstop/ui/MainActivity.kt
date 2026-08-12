@@ -11,10 +11,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,9 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.gstop.BuildConfig
 import com.gstop.data.Repository
 import com.gstop.schedule.ScheduleManager
 import com.gstop.schedule.StopService
@@ -119,33 +128,60 @@ fun GStopApp() {
     fun open(next: Screen) = stack.add(next)
     fun back() = stack.removeAt(stack.lastIndex)
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        when (val current = screen) {
-            Screen.Main -> MainScreen(
-                onOpenSettings = { open(Screen.Settings) },
-                onOpenHistory = { open(Screen.History) }
-            )
-            Screen.Settings -> SettingsScreen(
-                onBack = { back() },
-                onOpenLogs = { open(Screen.Logs) }
-            )
-            Screen.Logs -> LogsScreen(onBack = { back() })
-            Screen.History -> HistoryScreen(
-                onBack = { back() },
-                onOpenStop = { open(Screen.Observation(it)) }
-            )
-            is Screen.Observation -> ObservationScreen(
-                stopId = current.stopId,
-                title = "Observation",
-                backLabel = "Back",
-                onBack = { back() }
-            )
+        if (BuildConfig.DEBUG) DevBuildBanner()
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (val current = screen) {
+                Screen.Main -> MainScreen(
+                    onOpenSettings = { open(Screen.Settings) },
+                    onOpenHistory = { open(Screen.History) }
+                )
+                Screen.Settings -> SettingsScreen(
+                    onBack = { back() },
+                    onOpenLogs = { open(Screen.Logs) }
+                )
+                Screen.Logs -> LogsScreen(onBack = { back() })
+                Screen.History -> HistoryScreen(
+                    onBack = { back() },
+                    onOpenStop = { open(Screen.Observation(it)) }
+                )
+                is Screen.Observation -> ObservationScreen(
+                    stopId = current.stopId,
+                    title = "Observation",
+                    backLabel = "Back",
+                    onBack = { back() }
+                )
+            }
         }
     }
+}
+
+/**
+ * Only in a debug build, and only in the app's own screens — never on the stop screen, which is
+ * black and bears the enneagram and nothing else (PRD §6.1).
+ *
+ * The dev copy installs beside the real one wearing the same icon, and mistaking the two means
+ * reading the wrong practice log, or judging a change against a database that is not the one that
+ * matters. A release build has no banner and no way to grow one: this whole function is compiled
+ * out of it.
+ */
+@Composable
+private fun DevBuildBanner() {
+    Text(
+        text = "Dev build — its own separate practice log",
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onPrimary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(vertical = 3.dp)
+    )
 }
 
 /** Re-reads [SupersessionState] whenever the activity resumes, so returning from a system settings page updates the warnings. */
