@@ -173,7 +173,7 @@ fun GStopApp() {
 @Composable
 private fun DevBuildBanner() {
     Text(
-        text = "Dev build — its own separate practice log",
+        text = "Dev build",
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onPrimary,
         textAlign = TextAlign.Center,
