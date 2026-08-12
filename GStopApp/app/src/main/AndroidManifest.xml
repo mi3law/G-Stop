@@ -95,6 +95,31 @@
             android:name=".schedule.RolloverReceiver"
             android:exported="false" />
 
+        <!-- Where a tap on the widget lands: one pauses, two open the app. Its own task and
+             excluded from recents, so the thing the user returns to is never this. -->
+        <activity
+            android:name=".widget.WidgetTapActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=".widgettap"
+            android:theme="@style/Theme.GStop.Invisible" />
+
+        <!-- The home-screen widget: practice state, and one tap to pause or resume (PRD §2).
+             Not exported: APPWIDGET_UPDATE is delivered by the system, and the tap arrives
+             through a PendingIntent this app created. -->
+        <receiver
+            android:name=".widget.PracticeWidget"
+            android:exported="false"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_practice_info" />
+        </receiver>
+
         <receiver
             android:name=".schedule.BootReceiver"
             android:exported="true"

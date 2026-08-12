@@ -76,9 +76,9 @@ The viable iPhone route is a **minimal server that places a phone call** at each
 
 MVP: the scheduler on the active timeline, all four parameter groups, sleep windows, pause/resume, unsafe suppress, command/release sounds with supersession (alarm stream + exact alarms + boot/timezone regeneration), and the local log. That is the complete practice loop.
 
-Shipped after MVP: the three stop photographs, the five-minute observation window, and the History screen.
+Shipped after MVP: the three stop photographs, the five-minute observation window, the History screen, custom sound import, the main screen's sleep indicator (while a sleep window is running it says so, and names the hour it releases), and the home-screen widget — one cell bearing the enneagram, lit while the practice runs and out while it is paused. The widget carries no text: one tap toggles the pause, two open the app. A long press cannot reach it (the launcher keeps that gesture for moving widgets, and `RemoteViews` has no long-click), which is why the app-opening gesture is a double tap; telling the two apart is why a single tap acts only after the double-tap window has passed.
 
-Deferred: quick-settings tile/widget, motion/driving auto-suppress, DND-policy override, custom sound import, any settings web surface, export of observations.
+Deferred: quick-settings tile, motion/driving auto-suppress, DND-policy override, any settings web surface, export of observations.
 
 ## 6. Resolved decisions
 

@@ -12,4 +12,14 @@
         <item name="android:windowShowWallpaper">false</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
+
+    <!-- The widget's tap lands on an activity that draws nothing and finishes at once. No
+         background, no animation: the home screen must not so much as flicker under a tap. -->
+    <style name="Theme.GStop.Invisible" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

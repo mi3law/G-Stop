@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One cell, one image, one tap. The padding keeps the disc near the size of the app icons it
+    sits among: from Android 12 a widget is given the whole cell and must inset itself.
+-->
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_icon"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="6dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/widget_enneagram"
+    android:contentDescription="@string/widget_a11y_active" />

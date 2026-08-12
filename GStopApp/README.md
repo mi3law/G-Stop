@@ -61,6 +61,7 @@ core/       pure Kotlin, no Android — the whole scheduling model, fully unit-t
   ActiveTimeline             the day minus sleep windows; maps active-time offsets <-> wall clock
   StopSampler                count-first placement (PRD 6.4): shrink, scatter, sort, re-expand
   ScheduleEngine             draws the remainder of a day; handles regeneration and the day boundary
+  SleepClock                 whether a sleep window is running now, and when it releases
 
 data/       Room: settings, sleep windows, the drawn schedule, the log, observations
 
@@ -81,10 +82,15 @@ schedule/   the delivery layer
 ui/         Compose
   StopActivity               black screen, orange enneagram, green phrase, long-press to suppress
   ObservationActivity        the five minutes after a stop
-  MainScreen                 active/paused, permission warnings — never the schedule
+  MainScreen                 active / asleep / paused, permission warnings — never the schedule
+  SleepDisplay               how sleep is said, shared by the main screen and the widget
   HistoryScreen              every stop that happened, in the three kinds
   ObservationScreen          three fields, a voice note and three photographs
   SettingsScreen, LogsScreen
+
+widget/     the home screen
+  PracticeWidget             one cell: the enneagram, lit or out. Tapping it is the pause
+  WidgetTapActivity          tells one tap from two: pause, or open the app
 ```
 
 ### Points worth knowing
@@ -98,7 +104,32 @@ ui/         Compose
 - **The count scales on regeneration.** A resume at 21:00 draws proportionally fewer stops than
   one at 08:00, because less active time remains.
 - **The schedule is never displayed.** Not on the main screen, not in History, not in the Logs,
-  not during a stop. A stop appears in History only once it has occurred.
+  not during a stop, and not on the home-screen widget. A stop appears in History only once it has
+  occurred.
+- **Sleep is the one piece of the future that is shown.** While a sleep window is running the main
+  screen reads *Asleep* and names the hour it releases. That is not a leak: a sleep window is the
+  user's own standing instruction, so the hour was always theirs. Which is why `SleepClock` is a
+  *reading* of the same expansion `ActiveTimeline` is built from, not a second model that could
+  drift from it.
+- **Pause has one implementation.** `ScheduleManager.togglePaused()` — the main screen's button and
+  the widget both call it, under the same lock as regeneration, so two taps in flight cannot land
+  the practice somewhere neither of them meant.
+- **The widget shows one bit, and it is not sleep.** Lit means the practice is running, and during
+  a sleep window it is — nothing was paused and stops resume of their own accord. Keeping sleep off
+  the home screen is what lets the widget be redrawn by events alone (`updatePeriodMillis` is 0,
+  every regeneration redraws it) instead of needing an alarm at every sleep boundary.
+- **A widget gets one hook, and two gestures are built on it.** The launcher keeps long-press for
+  picking widgets up, and `RemoteViews` offers nothing but a click — so one tap and two are told
+  apart by `WidgetTapActivity`, which every tap goes to. One pauses, two open the app.
+- **The single tap waits out the double-tap window before acting**, so the colour changes a beat
+  after the finger lifts. It cannot act at once and undo itself on the second tap: pausing
+  regenerates the remainder of the day, and a double tap would quietly redraw the schedule on its
+  way to opening the app.
+- **The tap lands on an activity, not a broadcast.** A receiver calling `startActivity` is a
+  background activity start, which Android blocks unless "display over other apps" happens to be
+  granted — the app would open on some phones and silently not on others. An activity started by
+  the launcher is in the foreground, and an activity starting another activity is never in
+  question. It draws nothing and finishes inside `onCreate`.
 - **The sound is the stop.** It lives in a foreground service, not the activity, so a blocked
   notification or an awkward lock screen cannot silence a stop — only make it invisible.
 - **The screen is raised twice over.** Android honours a full-screen intent only when the screen

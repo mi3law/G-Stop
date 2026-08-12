@@ -13,6 +13,7 @@ import com.gstop.data.Repository
 import com.gstop.data.ScheduledStopEntity
 import com.gstop.data.StopStatus
 import com.gstop.ui.MainActivity
+import com.gstop.widget.PracticeWidget
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.ZoneId
@@ -42,6 +43,40 @@ object ScheduleManager {
         mutex.withLock { regenerateLocked(context, reason, nowMs) }
     }
 
+    /**
+     * The one way the practice is paused or resumed, whichever surface the tap came from — the
+     * main screen or the home-screen widget. Paused time does not exist on the active timeline
+     * (PRD §2), so the remainder of the day is redrawn either way.
+     */
+    suspend fun setPaused(
+        context: Context,
+        paused: Boolean,
+        nowMs: Long = System.currentTimeMillis()
+    ) {
+        mutex.withLock { setPausedLocked(context, paused, nowMs) }
+    }
+
+    /**
+     * Flips the pause and reports the state it settled on. Reading and writing under the one lock
+     * matters here: two taps in quick succession from the widget must end somewhere definite.
+     */
+    suspend fun togglePaused(context: Context, nowMs: Long = System.currentTimeMillis()): Boolean =
+        mutex.withLock {
+            val paused = !Repository.get(context).settings().paused
+            setPausedLocked(context, paused, nowMs)
+            paused
+        }
+
+    private suspend fun setPausedLocked(context: Context, paused: Boolean, nowMs: Long) {
+        val repo = Repository.get(context)
+        val current = repo.settings()
+        repo.saveSettings(
+            current.copy(paused = paused, pausedAtMs = if (paused) nowMs else null)
+        )
+        repo.log(if (paused) HistoryType.PAUSED else HistoryType.RESUMED, nowMs)
+        regenerateLocked(context, if (paused) "paused" else "resumed", nowMs)
+    }
+
     private suspend fun regenerateLocked(context: Context, reason: String, nowMs: Long) {
         val repo = Repository.get(context)
         val settings = repo.settings()
@@ -55,6 +90,7 @@ object ScheduleManager {
             cancelRolloverAlarm(context)
             repo.log(HistoryType.SCHEDULE_REGENERATED, nowMs, "paused — no stops scheduled ($reason)")
             Log.i(TAG, "regenerate: paused, nothing scheduled ($reason)")
+            PracticeWidget.refresh(context)
             return
         }
 
@@ -88,6 +124,7 @@ object ScheduleManager {
 
         armNextLocked(context, nowMs)
         armRolloverAlarm(context, nowMs, zone)
+        PracticeWidget.refresh(context)
     }
 
     /** Arms the next pending stop. Called after each stop completes. */
@@ -165,8 +202,14 @@ object ScheduleManager {
         val am = context.getSystemService(AlarmManager::class.java)
         val at = ScheduleEngine.nextDayBoundaryMs(nowMs, zone)
         // Deliberately not setAlarmClock: the rollover is bookkeeping, and an alarm-clock entry
-        // for it would sit in the system's "next alarm" slot.
-        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, rolloverPendingIntent(context))
+        // for it would sit in the system's "next alarm" slot. Exact where the OS allows it —
+        // unguarded, this throws if the exact-alarm permission is ever revoked.
+        val operation = rolloverPendingIntent(context)
+        if (canScheduleExactAlarms(context)) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+        } else {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+        }
     }
 
     private fun cancelRolloverAlarm(context: Context) {

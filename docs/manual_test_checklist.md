@@ -30,7 +30,7 @@ Two facts worth knowing before you start:
 
 | # | Step | Expected |
 |---|---|---|
-| 1.1 | Install and open the app | Main screen shows **Active**, an orange enneagram, Pause / Settings / History |
+| 1.1 | Install and open the app | Main screen shows **Active** (or **Asleep**, inside a sleep window), an orange enneagram, Pause / Settings / History |
 | 1.2 | Notification permission prompt appears | Grant it |
 | 1.3 | Read the warning cards under the buttons | Any ungranted item shows a card with a button that opens the right system page |
 | 1.4 | Tap **Grant** on "Exact alarms are not permitted" (if shown) | System page opens; after granting and returning, the card disappears |
@@ -120,6 +120,19 @@ you were doing, which is most of the point.
 | 6.5 | Toggle a window **off** with its switch | It stops applying immediately; Logs record a settings change and a regeneration |
 | 6.6 | Delete all sleep windows | Whole day becomes active |
 
+### 6b. Saying so on the home screen
+
+| # | Step | Expected |
+|---|---|---|
+| 6b.1 | Open the app **during** a sleep window | Reads "**Asleep**", and underneath "A sleep window is running — no stops until 07:00" |
+| 6b.2 | Check the hour named | It is the end of the *whole* stretch of sleep, not of the first window — two windows that meet at 23:00 report the later end |
+| 6b.3 | Leave the app open across the end of the window | Within a minute it changes to "Active" by itself. No reopening, no pull to refresh |
+| 6b.4 | Open the app inside a window that ends tomorrow (e.g. at 23:30 of a 23:00 → 07:00 window) | Reads "07:00 tomorrow" |
+| 6b.5 | Stay on the screen across midnight in that window | The wording drops "tomorrow" within a minute of midnight |
+| 6b.6 | Delete every sleep window while the screen is open | Returns to "Active" |
+| 6b.7 | **Pause** during a sleep window | Reads "**Paused**", not "Asleep" — pausing outranks sleeping |
+| 6b.8 | Add a window covering right now, from Settings | Going back to the main screen, it already reads "Asleep" |
+
 ## 7. Pause / resume and regeneration
 
 | # | Step | Expected |
@@ -130,6 +143,37 @@ you were doing, which is most of the point.
 | 7.4 | Resume shortly after a stop has fired | The next stop does not come sooner than your minimum gap of active time after that stop |
 | 7.5 | Resume late in the evening | Fewer stops are drawn than a morning resume would give — the count scales with remaining active time |
 | 7.6 | Change any setting mid-day | Logs record "Settings changed" followed by "Schedule regenerated" |
+
+## 7b. The home-screen widget
+
+One cell, no words: the enneagram in orange while the practice is running, dark grey while it is
+paused. **One tap pauses or resumes; two quick taps open the app.** Long-press belongs to the
+launcher and always will — that gesture picks the widget up to move it, and no app can intercept
+it, which is why the app-opening gesture is the double tap instead.
+
+Because the two have to be told apart, a single tap only acts once the double-tap window has
+passed: expect the colour to change a beat after your finger lifts. That pause is deliberate, not
+lag.
+
+| # | Step | Expected |
+|---|---|---|
+| 7b.1 | Long-press the home screen → Widgets → **G-Stop** | One 1×1 widget offered, previewing the orange enneagram on black |
+| 7b.2 | Place it beside the G-Stop app icon | It looks like the icon. **Judge the size here** — the disc should sit near the size of the icons around it, not swamp them. If it is off, the padding in `widget_icon.xml` is the one number to change |
+| 7b.3 | Check the shape against your launcher's icons | It is a circle. If your launcher masks icons into squircles this will read slightly differently — say so and it becomes a rounded square |
+| 7b.4 | Tap it once | After a beat the enneagram goes dark grey. Open the app: it reads "Paused" |
+| 7b.5 | Tap it once again, then open **Logs** | Orange again; "Resumed" and "Schedule regenerated" are recorded, exactly as a tap in the app records them |
+| 7b.6 | **Double-tap it** | The app opens. **The state does not change** — it is the same colour when you come back, and the Logs show no pause or resume from that gesture. This is the row that matters most; everything below assumes it works |
+| 7b.7 | Watch the home screen closely through a single tap | No flash, no dim, no window sliding in. The tap goes to an invisible activity, and it should stay invisible |
+| 7b.8 | Double-tap, but leave a deliberate gap between the taps | Two separate single taps: it pauses, then resumes. The gap that separates them is the system's own double-tap timeout |
+| 7b.9 | Double-tap and find the app did **not** open, or the state flipped | The second tap missed the window. Say so — the window is one constant in `WidgetTapActivity` and can be widened |
+| 7b.10 | Pause **in the app**, then look at the home screen | The widget is already grey. It is not waiting for anything |
+| 7b.11 | Tap it by accident (this will happen) | The change is visible at a glance, and the Logs say when. That is the only guard there is against a stray tap, so decide now whether you want it on your main home screen |
+| 7b.12 | Wait for a sleep window to begin with the widget placed | It stays **orange**. Sleeping is not pausing — the practice is still running, and the app screen is where the hour it releases is named |
+| 7b.13 | Double-tap while an observation window is open | The app comes forward on the observation, and nothing you have typed is lost |
+| 7b.14 | **Reboot** the phone, do not open the app | The widget shows the right state once boot completes |
+| 7b.15 | Reinstall the APK over the existing one | The widget survives and still works — no need to place it again |
+| 7b.16 | Check the recents screen after tapping the widget | Only G-Stop is there, if you opened it. The activity that handles the tap never appears |
+| 7b.17 | Look at the widget for anything it should not say | Nothing about the schedule can appear here, because nothing appears here but the mark |
 
 ## 8. Survival
 
@@ -179,8 +223,8 @@ you were doing, which is most of the point.
 
 | # | Check | Expected |
 |---|---|---|
-| 9.1 | Anywhere in the app — main, settings, History, Logs | The time of a **future** stop is never shown |
-| 9.2 | Anywhere in the app | The number of stops drawn for today is never shown |
+| 9.1 | Anywhere in the app — main, settings, History, Logs — **and on the widget** | The time of a **future** stop is never shown. The end of a sleep window is not a stop time and is fine |
+| 9.2 | Anywhere in the app, or on the widget | The number of stops drawn for today is never shown |
 | 9.3 | During a stop | No elapsed or remaining time is shown. The observation countdown is *after* the stop and is fine |
 | 9.4 | Two stops in quick succession | Never closer than the minimum gap in active time |
 | 9.5 | Network | Airplane mode changes nothing; the app makes no connections |

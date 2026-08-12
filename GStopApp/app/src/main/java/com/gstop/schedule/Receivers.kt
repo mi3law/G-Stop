@@ -18,7 +18,7 @@ private val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 /**
  * Runs [block] while holding the broadcast open, so the work survives past onReceive.
  */
-private fun BroadcastReceiver.async(block: suspend () -> Unit) {
+internal fun BroadcastReceiver.async(block: suspend () -> Unit) {
     val result = goAsync()
     receiverScope.launch {
         try {

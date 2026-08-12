@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gstop.data.HistoryType
 import com.gstop.data.Repository
 import com.gstop.data.SettingsEntity
 import com.gstop.schedule.ScheduleManager
@@ -45,8 +44,11 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * The main screen shows practice *state* — active or paused — and nothing about the schedule.
- * No next-stop time, no count, no countdown: the drawn schedule is never displayed.
+ * The main screen shows practice *state* — active, asleep or paused — and nothing about the
+ * schedule. No next-stop time, no count, no countdown: the drawn schedule is never displayed.
+ *
+ * Sleep is the one piece of the future it does name, and it is not a leak: a sleep window is the
+ * user's own standing instruction, so the hour it releases was always theirs.
  *
  * The controls sit on the bottom edge, within thumb reach; everything above them scrolls.
  */
@@ -56,7 +58,12 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
     val repo = remember(context) { Repository.get(context) }
     val scope = rememberCoroutineScope()
     val settings by repo.settingsFlow.collectAsState(initial = SettingsEntity())
+    val windows by repo.sleepWindowsFlow.collectAsState(initial = emptyList())
     val system = rememberSupersessionState()
+
+    // Pausing outranks sleeping: a paused practice is still paused when morning comes.
+    val sleep = rememberSleepIndication(windows)
+    val asleep = sleep.asleep && !settings.paused
 
     Column(
         modifier = Modifier
@@ -88,21 +95,30 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
             Spacer(Modifier.height(28.dp))
 
             Text(
-                text = if (settings.paused) "Paused" else "Active",
+                text = when {
+                    settings.paused -> "Paused"
+                    asleep -> "Asleep"
+                    else -> "Active"
+                },
                 style = MaterialTheme.typography.titleLarge,
-                color = if (settings.paused) MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (settings.paused || asleep) MaterialTheme.colorScheme.onSurfaceVariant
                 else MaterialTheme.colorScheme.secondary
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = if (settings.paused) {
-                    val since = settings.pausedAtMs?.let {
-                        " since " +
-                            SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(Date(it))
-                    } ?: ""
-                    "Paused time does not exist on the active timeline$since."
-                } else {
-                    "Stops will come without warning."
+                text = when {
+                    settings.paused -> {
+                        val since = settings.pausedAtMs?.let {
+                            " since " +
+                                SimpleDateFormat("d MMM, HH:mm", Locale.getDefault())
+                                    .format(Date(it))
+                        } ?: ""
+                        "Paused time does not exist on the active timeline$since."
+                    }
+                    asleep -> sleep.untilText
+                        ?.let { "A sleep window is running — no stops until $it." }
+                        ?: "A sleep window is running — no stops."
+                    else -> "Stops will come without warning."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -117,27 +133,11 @@ fun MainScreen(onOpenSettings: () -> Unit, onOpenHistory: () -> Unit) {
         }
 
         Button(
+            // The same one path the home-screen widget takes, so the two can never disagree
+            // about what a pause is.
             onClick = {
                 scope.launch {
-                    withContext(Dispatchers.IO) {
-                        val now = System.currentTimeMillis()
-                        val current = repo.settings()
-                        val nowPaused = !current.paused
-                        repo.saveSettings(
-                            current.copy(
-                                paused = nowPaused,
-                                pausedAtMs = if (nowPaused) now else null
-                            )
-                        )
-                        repo.log(
-                            if (nowPaused) HistoryType.PAUSED else HistoryType.RESUMED,
-                            now
-                        )
-                        ScheduleManager.regenerate(
-                            context,
-                            if (nowPaused) "paused" else "resumed"
-                        )
-                    }
+                    withContext(Dispatchers.IO) { ScheduleManager.togglePaused(context) }
                 }
             },
             modifier = Modifier

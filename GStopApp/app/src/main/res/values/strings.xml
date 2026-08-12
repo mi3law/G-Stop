@@ -12,4 +12,10 @@
     <string name="observation_label">Observation</string>
     <string name="observe_notification_title">Observe that stop</string>
     <string name="observe_notification_text">Movement, feeling, thinking — for five minutes.</string>
+
+    <!-- The home-screen widget. It carries no visible words at all — the mark being lit or out is
+         the whole of what it says — so these are what it tells a screen reader. -->
+    <string name="widget_description">The enneagram, lit while the practice is running. One tap pauses or resumes it; two opens the app.</string>
+    <string name="widget_a11y_active">G-Stop is running. Tap to pause, or tap twice to open the app.</string>
+    <string name="widget_a11y_paused">G-Stop is paused. Tap to resume, or tap twice to open the app.</string>
 </resources>
