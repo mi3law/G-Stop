@@ -45,8 +45,11 @@ object ScheduleManager {
 
     /**
      * The one way the practice is paused or resumed, whichever surface the tap came from — the
-     * main screen or the home-screen widget. Paused time does not exist on the active timeline
-     * (PRD §2), so the remainder of the day is redrawn either way.
+     * main screen or the home-screen widget.
+     *
+     * Paused time does not exist on the active timeline (PRD §2). A pause therefore sets the
+     * drawn schedule aside rather than discarding it, and a resume redraws only if the timeline
+     * actually moved while it was away — see [setPausedLocked].
      */
     suspend fun setPaused(
         context: Context,
@@ -67,6 +70,21 @@ object ScheduleManager {
             paused
         }
 
+    /**
+     * A pause holds the drawn schedule aside instead of tearing it up, and a resume gives it back
+     * untouched when *no active time passed* while it was away.
+     *
+     * The schedule is drawn on the active timeline, so it needs redrawing exactly when that
+     * timeline moves — and a pause that begins and ends inside a sleep window moves nothing. The
+     * old behaviour redrew regardless, which made toggling the pause overnight a free re-roll of
+     * the day's stops: same count, same distribution, different moments, at no cost. Nothing
+     * about the practice should be re-rollable for free (PRD §1).
+     *
+     * Deliberately not phrased as "are we asleep": measuring the active time between the two taps
+     * is the same answer for a pause inside a sleep window, and the right one for every other
+     * case — pausing at 22:00 and resuming at 02:00 still redraws, because an hour of active time
+     * went with it.
+     */
     private suspend fun setPausedLocked(context: Context, paused: Boolean, nowMs: Long) {
         val repo = Repository.get(context)
         val current = repo.settings()
@@ -74,7 +92,38 @@ object ScheduleManager {
             current.copy(paused = paused, pausedAtMs = if (paused) nowMs else null)
         )
         repo.log(if (paused) HistoryType.PAUSED else HistoryType.RESUMED, nowMs)
-        regenerateLocked(context, if (paused) "paused" else "resumed", nowMs)
+
+        if (paused) {
+            cancelStopAlarm(context)
+            cancelRolloverAlarm(context)
+            repo.suspendPendingStops()
+            Log.i(TAG, "paused: schedule set aside, nothing armed")
+            PracticeWidget.refresh(context)
+            return
+        }
+
+        val pausedAt = current.pausedAtMs
+        val elapsedActiveMs = if (pausedAt == null) -1L else ScheduleEngine.activeMsBetween(
+            fromMs = pausedAt,
+            toMs = nowMs,
+            windows = repo.sleepWindows(),
+            zone = ZoneId.systemDefault()
+        )
+
+        // The count > 0 test matters: anything that regenerated while paused — a reboot, the
+        // midnight rollover, a settings edit — threw the set-aside draw away on the way past, and
+        // resuming into an empty schedule would leave the day with no stops at all.
+        if (elapsedActiveMs == 0L && repo.suspendedStopCount() > 0) {
+            repo.restoreSuspendedStops()
+            armNextLocked(context, nowMs)
+            armRolloverAlarm(context, nowMs, ZoneId.systemDefault())
+            Log.i(TAG, "resumed with no active time elapsed — the drawn schedule stands")
+            PracticeWidget.refresh(context)
+            return
+        }
+
+        repo.discardSuspendedStops()
+        regenerateLocked(context, "resumed", nowMs)
     }
 
     private suspend fun regenerateLocked(context: Context, reason: String, nowMs: Long) {
@@ -88,6 +137,10 @@ object ScheduleManager {
 
         if (settings.paused) {
             cancelRolloverAlarm(context)
+            // Whatever the pause set aside cannot be trusted across this: the day rolled over, or
+            // the phone rebooted, or the parameters it was drawn under changed. Resuming will draw
+            // a fresh one rather than hand back a schedule for a day that has moved on.
+            repo.discardSuspendedStops()
             repo.log(HistoryType.SCHEDULE_REGENERATED, nowMs, "paused — no stops scheduled ($reason)")
             Log.i(TAG, "regenerate: paused, nothing scheduled ($reason)")
             PracticeWidget.refresh(context)

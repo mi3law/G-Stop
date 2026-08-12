@@ -63,6 +63,20 @@ interface ScheduledStopDao {
     @Query("DELETE FROM scheduled_stops WHERE status = 'PENDING'")
     suspend fun deletePending()
 
+    // --- a pause holds the draw aside ---
+
+    @Query("UPDATE scheduled_stops SET status = 'SUSPENDED' WHERE status = 'PENDING'")
+    suspend fun suspendPending()
+
+    @Query("UPDATE scheduled_stops SET status = 'PENDING' WHERE status = 'SUSPENDED'")
+    suspend fun restoreSuspended()
+
+    @Query("DELETE FROM scheduled_stops WHERE status = 'SUSPENDED'")
+    suspend fun deleteSuspended()
+
+    @Query("SELECT COUNT(*) FROM scheduled_stops WHERE status = 'SUSPENDED'")
+    suspend fun suspendedCount(): Int
+
     @Query("UPDATE scheduled_stops SET status = 'MISSED' WHERE status = 'PENDING' AND triggerAtMs < :beforeMs")
     suspend fun markMissed(beforeMs: Long)
 

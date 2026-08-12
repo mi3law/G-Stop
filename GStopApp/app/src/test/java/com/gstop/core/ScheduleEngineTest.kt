@@ -144,6 +144,49 @@ class ScheduleEngineTest {
         assertTrue(elapsed < p.minGapMs)
     }
 
+    /**
+     * The test behind the rule in ScheduleManager.setPausedLocked: a resume redraws the day only
+     * when active time passed while the practice was paused. These are the two answers it turns
+     * on — nothing elapsed, so the draw stands; an hour elapsed, so it cannot.
+     */
+    @Test
+    fun `a pause that begins and ends inside a sleep window costs no active time`() {
+        val pausedAt = at(LocalTime.of(1, 0))
+        val resumedAt = at(LocalTime.of(6, 0))
+        assertEquals(0L, ScheduleEngine.activeMsBetween(pausedAt, resumedAt, listOf(nightly), zone))
+    }
+
+    @Test
+    fun `a pause that starts before the window still costs the active time it took`() {
+        val pausedAt = at(LocalTime.of(22, 0))
+        val resumedAt = at(LocalTime.of(23, 59))
+        assertEquals(
+            TimeUnit.HOURS.toMillis(1),
+            ScheduleEngine.activeMsBetween(pausedAt, resumedAt, listOf(nightly), zone)
+        )
+    }
+
+    @Test
+    fun `a pause held past the window costs the morning it ate`() {
+        val pausedAt = at(LocalTime.of(2, 0))
+        val resumedAt = at(LocalTime.of(9, 30))
+        // 07:00 to 09:30 is active; everything before it is not.
+        assertEquals(
+            TimeUnit.MINUTES.toMillis(150),
+            ScheduleEngine.activeMsBetween(pausedAt, resumedAt, listOf(nightly), zone)
+        )
+    }
+
+    @Test
+    fun `with no sleep windows every paused minute is an active minute`() {
+        val pausedAt = at(LocalTime.of(1, 0))
+        val resumedAt = at(LocalTime.of(6, 0))
+        assertEquals(
+            TimeUnit.HOURS.toMillis(5),
+            ScheduleEngine.activeMsBetween(pausedAt, resumedAt, emptyList(), zone)
+        )
+    }
+
     @Test
     fun `no stop is drawn inside the grace period after generation`() {
         val now = at(LocalTime.of(9, 0))

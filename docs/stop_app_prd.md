@@ -17,7 +17,7 @@ Non-goals: social features, accounts, cloud sync, gamification, streaks, or any 
 
 ## 2. Core functionality
 
-**Scheduling (normative spec: `stop_app_duration_frequency.md`).** In brief: all random generation runs on the active timeline (the day minus sleep windows and pauses). Daily stop count N drawn between user min–max (min may be 0 → empty days); stops placed by **count-first placement** (see §6, decision 4), with the minimum gap measured in active time; per-stop duration drawn uniformly between user min–max. Regeneration of the remaining day's sampling occurs on: pause→resume, any mid-day edit to sleep windows or thresholds, reboot, and timezone change.
+**Scheduling (normative spec: `stop_app_duration_frequency.md`).** In brief: all random generation runs on the active timeline (the day minus sleep windows and pauses). Daily stop count N drawn between user min–max (min may be 0 → empty days); stops placed by **count-first placement** (see §6, decision 4), with the minimum gap measured in active time; per-stop duration drawn uniformly between user min–max. Regeneration of the remaining day's sampling occurs on: pause→resume, any mid-day edit to sleep windows or thresholds, reboot, and timezone change. Refinement to the pause→resume case: a resume redraws only if *active* time elapsed while the practice was paused. A pause that begins and ends inside a sleep window takes no active time with it, leaves the remaining timeline exactly as the draw found it, and hands the same schedule back. Redrawing it regardless would make an overnight pause-toggle a costless re-roll of the day's stops, which §1's externality principle does not permit.
 
 **User-definable parameters** (defaults and ranges in the companion doc):
 
@@ -31,7 +31,7 @@ Non-goals: social features, accounts, cloud sync, gamification, streaks, or any 
 
 **Controls.**
 
-- **Pause/resume (global):** behaves as an ad-hoc sleep window; paused time does not exist on the active timeline; resume triggers regeneration. One tap from the app's main screen; also exposed as a home-screen widget/quick-settings tile if cheap to build.
+- **Pause/resume (global):** behaves as an ad-hoc sleep window; paused time does not exist on the active timeline; resume triggers regeneration when the pause consumed active time, and otherwise restores the schedule it set aside (see §2 scheduling). One tap from the app's main screen; also exposed as a home-screen widget/quick-settings tile if cheap to build.
 - **Unsafe-context suppress (per-stop):** during a stop, a single deliberate gesture (e.g., long-press) silences that stop without ending the schedule. Recorded as "suppressed," never as failure.
 
 **The record of a stop.** A stop photographs itself: three frames from the front camera, at the beginning, the middle and the end of the drawn duration. Nothing about this is visible during the stop — no preview, no shutter sound of the app's own making, no change to the black screen — and the frames never leave the app's private storage. The camera is optional at runtime: a refusal, a phone with no front camera, or a stop screen the OS declined to show costs the record, never the stop.

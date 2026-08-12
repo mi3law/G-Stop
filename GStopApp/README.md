@@ -100,7 +100,15 @@ widget/     the home screen
 - **The gap is measured in active time.** Two stops either side of a sleep window can be a minute
   apart on the wall clock and still be an hour apart on the active timeline. That is correct.
 - **Regeneration is one code path.** Pause/resume, mid-day settings edits, reboot, timezone
-  change and the midnight rollover all call `ScheduleManager.regenerate()`.
+  change and the midnight rollover all call `ScheduleManager.regenerate()`. A resume is the one
+  caller that can decline it — see below.
+- **A pause sets the draw aside; it does not tear it up.** Pending stops go to `SUSPENDED`, which
+  nothing arms, nothing can fire, and `markMissed` cannot stamp as stops that got away. A resume
+  hands them back untouched *if no active time passed while they were away* — otherwise it throws
+  them out and redraws. The test is `activeMsBetween(pausedAt, now) == 0`, not "was it night":
+  same answer for a pause inside a sleep window, and the right one everywhere else. Without it,
+  toggling the pause overnight was a costless re-roll of the day's stops — same count, same
+  distribution, different moments — and nothing in the practice should be re-rollable for free.
 - **The count scales on regeneration.** A resume at 21:00 draws proportionally fewer stops than
   one at 08:00, because less active time remains.
 - **The schedule is never displayed.** Not on the main screen, not in History, not in the Logs,

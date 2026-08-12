@@ -143,6 +143,13 @@ you were doing, which is most of the point.
 | 7.4 | Resume shortly after a stop has fired | The next stop does not come sooner than your minimum gap of active time after that stop |
 | 7.5 | Resume late in the evening | Fewer stops are drawn than a morning resume would give — the count scales with remaining active time |
 | 7.6 | Change any setting mid-day | Logs record "Settings changed" followed by "Schedule regenerated" |
+| 7.7 | Pause **during** a sleep window and resume while still inside it | Logs record "Paused" and "Resumed" and **no** "Schedule regenerated" between them. The day's stops are the ones already drawn — a pause that costs no active time is not a re-roll |
+| 7.8 | Pause during the day and resume ten minutes later | Logs *do* record a regeneration. Ten minutes of active time went, so the day genuinely changed |
+| 7.9 | Pause overnight and resume the next morning, after the window ended | A regeneration is logged. Active time passed once the window released, so the schedule cannot stand |
+| 7.10 | Pause, then open and close the app several times | **No** log line per launch. Opening the app while paused used to record a regeneration every time |
+| 7.11 | Pause in the evening, leave it paused past midnight, resume the next day | A regeneration is logged — the rollover discarded what the pause set aside, as it must |
+| 7.12 | Pause, reboot the phone, resume | Stops still come. A reboot throws the set-aside schedule away, so the resume draws a fresh one |
+| 7.13 | After any pause spanning a time a stop would have come, check **Logs** and **History** | No "Stop missed" rows for stops that were paused over. They were never pending, so they were never missed |
 
 ## 7b. The home-screen widget
 

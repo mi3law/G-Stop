@@ -83,7 +83,13 @@ data class SleepWindowEntity(
     }
 }
 
-enum class StopStatus { PENDING, FIRED, SUPPRESSED, MISSED }
+/**
+ * SUSPENDED is a pause holding the draw aside. It is deliberately not PENDING, so the alarm
+ * receiver refuses it, `markMissed` cannot stamp it as a stop that got away, and History — which
+ * shows only FIRED and SUPPRESSED — never sees it. A resume either makes it PENDING again or
+ * throws it away; nothing else in the app looks at it.
+ */
+enum class StopStatus { PENDING, SUSPENDED, FIRED, SUPPRESSED, MISSED }
 
 /**
  * A drawn stop. Never surfaced to the user before it fires — the schedule is not displayed.

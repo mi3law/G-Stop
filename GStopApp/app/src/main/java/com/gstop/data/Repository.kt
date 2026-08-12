@@ -66,6 +66,15 @@ class Repository(context: Context) {
 
     suspend fun clearPendingStops() = stopDao.deletePending()
 
+    /** A pause sets the drawn stops aside; a resume gives them back or throws them away. */
+    suspend fun suspendPendingStops() = stopDao.suspendPending()
+
+    suspend fun restoreSuspendedStops() = stopDao.restoreSuspended()
+
+    suspend fun discardSuspendedStops() = stopDao.deleteSuspended()
+
+    suspend fun suspendedStopCount(): Int = stopDao.suspendedCount()
+
     suspend fun markMissedBefore(ms: Long) = stopDao.markMissed(ms)
 
     suspend fun nextPendingStop(afterMs: Long): ScheduledStopEntity? = stopDao.nextPending(afterMs)

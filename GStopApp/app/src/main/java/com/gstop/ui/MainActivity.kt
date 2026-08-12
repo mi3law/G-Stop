@@ -91,8 +91,11 @@ fun GStopApp() {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val repo = Repository.get(context)
-            repo.settings()
-            if (repo.nextPendingStop(System.currentTimeMillis()) == null) {
+            // Not while paused: there is nothing to arm, the regeneration would write a log line
+            // on every single launch, and it would throw away the schedule the pause set aside.
+            if (!repo.settings().paused &&
+                repo.nextPendingStop(System.currentTimeMillis()) == null
+            ) {
                 ScheduleManager.regenerate(context, "app opened — no schedule armed")
             }
         }
