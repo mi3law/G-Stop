@@ -119,13 +119,16 @@ data class ObservationEntity(
     val movement: String? = null,
     val feeling: String? = null,
     val thinking: String? = null,
+    /** The outer context: what the stop broke into. Distinct from the three inner registers. */
+    val activity: String? = null,
     val hasVoiceNote: Boolean = false,
     /** First moment the observation became non-empty; null while it is still empty. */
     val notedAtMs: Long? = null
 ) {
     val isNoted: Boolean
         get() = hasVoiceNote ||
-            !movement.isNullOrBlank() || !feeling.isNullOrBlank() || !thinking.isNullOrBlank()
+            !movement.isNullOrBlank() || !feeling.isNullOrBlank() ||
+            !thinking.isNullOrBlank() || !activity.isNullOrBlank()
 
     fun windowClosesAtMs(): Long = endedAtMs + WINDOW_MS
 
@@ -145,6 +148,7 @@ data class StopRecord(
     val movement: String?,
     val feeling: String?,
     val thinking: String?,
+    val activity: String?,
     val hasVoiceNote: Boolean,
     val endedAtMs: Long?
 ) {
@@ -152,7 +156,8 @@ data class StopRecord(
 
     val noted: Boolean
         get() = hasVoiceNote ||
-            !movement.isNullOrBlank() || !feeling.isNullOrBlank() || !thinking.isNullOrBlank()
+            !movement.isNullOrBlank() || !feeling.isNullOrBlank() ||
+            !thinking.isNullOrBlank() || !activity.isNullOrBlank()
 
     /** The three kinds of stop the practice recognises. */
     val label: String

@@ -15,6 +15,7 @@ class ObservationTest {
         movement: String? = null,
         feeling: String? = null,
         thinking: String? = null,
+        activity: String? = null,
         hasVoiceNote: Boolean = false
     ) = ObservationEntity(
         stopId = 1,
@@ -22,6 +23,7 @@ class ObservationTest {
         movement = movement,
         feeling = feeling,
         thinking = thinking,
+        activity = activity,
         hasVoiceNote = hasVoiceNote
     )
 
@@ -40,6 +42,7 @@ class ObservationTest {
         assertTrue(observation(movement = "shoulders up").isNoted)
         assertTrue(observation(feeling = "irritable").isNoted)
         assertTrue(observation(thinking = "tomorrow").isNoted)
+        assertTrue(observation(activity = "reading at the desk").isNoted)
     }
 
     @Test
@@ -59,6 +62,7 @@ class ObservationTest {
     private fun record(
         status: StopStatus = StopStatus.FIRED,
         movement: String? = null,
+        activity: String? = null,
         hasVoiceNote: Boolean = false
     ) = StopRecord(
         stopId = 1,
@@ -67,6 +71,7 @@ class ObservationTest {
         movement = movement,
         feeling = null,
         thinking = null,
+        activity = activity,
         hasVoiceNote = hasVoiceNote,
         endedAtMs = null
     )
@@ -79,6 +84,7 @@ class ObservationTest {
     @Test
     fun `a stop with anything written about it is noted`() {
         assertEquals("Stop, noted", record(movement = "still").label)
+        assertEquals("Stop, noted", record(activity = "cooking").label)
         assertEquals("Stop, noted", record(hasVoiceNote = true).label)
     }
 
