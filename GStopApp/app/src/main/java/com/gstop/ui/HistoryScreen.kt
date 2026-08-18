@@ -155,7 +155,8 @@ private fun preview(record: StopRecord): String? {
     val written = listOfNotNull(
         record.movement?.takeIf { it.isNotBlank() },
         record.feeling?.takeIf { it.isNotBlank() },
-        record.thinking?.takeIf { it.isNotBlank() }
+        record.thinking?.takeIf { it.isNotBlank() },
+        record.activity?.takeIf { it.isNotBlank() }
     )
     return when {
         written.isNotEmpty() -> written.joinToString(" · ")

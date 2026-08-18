@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -111,6 +112,7 @@ fun ObservationScreen(
     var movement by remember(stopId) { mutableStateOf("") }
     var feeling by remember(stopId) { mutableStateOf("") }
     var thinking by remember(stopId) { mutableStateOf("") }
+    var activity by remember(stopId) { mutableStateOf("") }
     var seeded by remember(stopId) { mutableStateOf(false) }
 
     LaunchedEffect(observation) {
@@ -119,18 +121,20 @@ fun ObservationScreen(
         movement = loaded.movement.orEmpty()
         feeling = loaded.feeling.orEmpty()
         thinking = loaded.thinking.orEmpty()
+        activity = loaded.activity.orEmpty()
         seeded = true
     }
 
     // Saved as it is written, so leaving the screen — or the window closing under a half-typed
     // line — never loses what was already noticed.
-    LaunchedEffect(movement, feeling, thinking, seeded) {
+    LaunchedEffect(movement, feeling, thinking, activity, seeded) {
         if (!seeded) return@LaunchedEffect
         val base = observation ?: return@LaunchedEffect
         val edited = base.copy(
             movement = movement.blankToNull(),
             feeling = feeling.blankToNull(),
-            thinking = thinking.blankToNull()
+            thinking = thinking.blankToNull(),
+            activity = activity.blankToNull()
         )
         if (edited == base) return@LaunchedEffect
         delay(SAVE_DEBOUNCE_MS)
@@ -178,6 +182,20 @@ fun ObservationScreen(
             value = thinking,
             enabled = editable,
             onValueChange = { thinking = it }
+        )
+
+        // The outer context, set apart from the three inner registers above.
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
+
+        ObservationField(
+            label = "Activity",
+            placeholder = "What you were immersed in",
+            value = activity,
+            enabled = editable,
+            onValueChange = { activity = it }
         )
 
         Spacer(Modifier.height(8.dp))
