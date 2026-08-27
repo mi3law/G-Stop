@@ -15,7 +15,8 @@ enum class PhotoSlot(val fileName: String, val label: String) {
  *
  * Everything sits in the app's private `filesDir`, never in MediaStore: these are pictures of the
  * user taken without them posing, in their own home, and they have no business appearing in the
- * phone's gallery, in a backup, or in any other app.
+ * phone's gallery or in any other app. They enter a backup only through the explicit opt-in in
+ * Settings — by default a snapshot carries the written record and none of this.
  */
 object StopMedia {
 

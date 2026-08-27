@@ -24,6 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun scheduledStopDao(): ScheduledStopDao
     abstract fun historyDao(): HistoryDao
     abstract fun observationDao(): ObservationDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         @Volatile private var instance: AppDatabase? = null

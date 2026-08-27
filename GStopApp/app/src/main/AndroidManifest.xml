@@ -31,8 +31,9 @@
 
     <!-- The record of a stop: three front-camera frames, and a spoken observation afterwards.
          Both are optional at runtime — a refusal costs the record, never the stop. Nothing is
-         written anywhere but the app's private storage, and there is no network permission at
-         all for any of it to leave by. -->
+         written anywhere but the app's private storage — except the backups the user sets up
+         themselves, into a folder they picked — and there is still no network permission at all
+         for any of it to leave by. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
@@ -130,6 +131,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Hands the CSV export to the share sheet. Only cache/exports is reachable through it. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver
             android:name=".schedule.TimeChangeReceiver"

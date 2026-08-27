@@ -50,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gstop.backup.BackupManager
+import com.gstop.backup.CsvExport
 import com.gstop.core.SleepWindow
 import com.gstop.data.HistoryType
 import com.gstop.data.Repository
@@ -62,8 +64,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.format.TextStyle
+import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -259,6 +263,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
             }
         )
 
+        BackupSection()
+
         SectionCard("Logs") {
             Hint(
                 "Everything the app has done — stops, pauses, regenerations, reboots. The " +
@@ -344,6 +350,170 @@ private fun ObservationsSection(photosEnabled: Boolean, onTogglePhotos: (Boolean
         )
     }
 }
+
+/**
+ * Backups leave the phone only through a folder the user picked in the system picker — on this
+ * phone, one that lives in Google Drive, whose app does the uploading. G-Stop itself still has
+ * no network permission; everything here is a local file write. The CSV export exists because a
+ * spreadsheet is readable in Google Sheets and the backup zip is not: one is for looking at the
+ * practice, the other for getting it back.
+ */
+@Composable
+private fun BackupSection() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var reload by remember { mutableStateOf(0) }
+    var working by remember { mutableStateOf<String?>(null) }
+    var restoreCandidate by remember { mutableStateOf<Uri?>(null) }
+    var restoreResult by remember { mutableStateOf<String?>(null) }
+
+    val status by produceState<BackupManager.Status?>(initialValue = null, reload) {
+        value = withContext(Dispatchers.IO) { BackupManager.status(context) }
+    }
+    // Resolved separately: naming the folder queries its document provider, which can be slow.
+    val folderName by produceState<String?>(initialValue = null, reload) {
+        value = withContext(Dispatchers.IO) { BackupManager.folderName(context) }
+    }
+
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            BackupManager.setFolder(context, uri)
+            reload += 1
+        }
+    }
+
+    // Drive hands zips back as octet-stream often enough that zip alone hides real backups.
+    val restorePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) restoreCandidate = uri }
+
+    SectionCard("Backup") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Backup folder", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    folderName ?: "Not set",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            TextButton(onClick = { folderPicker.launch(null) }) {
+                Text(if (folderName == null) "Choose" else "Change")
+            }
+        }
+        Hint(
+            "Pick a folder in Google Drive and a snapshot is written there about once a day. " +
+                "The Drive app does the carrying; G-Stop never touches the network."
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Include photos and voice notes", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Off, they never leave this phone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = status?.includeMedia == true,
+                onCheckedChange = { enabled ->
+                    BackupManager.setIncludeMedia(context, enabled)
+                    reload += 1
+                }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = {
+                    working = "Backing up…"
+                    scope.launch {
+                        withContext(Dispatchers.IO) { BackupManager.backupNow(context) }
+                        working = null
+                        reload += 1
+                    }
+                },
+                enabled = folderName != null && working == null
+            ) { Text("Back up now") }
+
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val intent = withContext(Dispatchers.IO) { CsvExport.shareIntent(context) }
+                        context.startActivity(intent)
+                    }
+                }
+            ) { Text("Export CSV") }
+        }
+
+        TextButton(
+            onClick = {
+                restorePicker.launch(arrayOf("application/zip", "application/octet-stream"))
+            },
+            enabled = working == null
+        ) { Text("Restore from a backup…") }
+
+        working?.let { Hint(it) }
+        restoreResult?.let { Hint(it) }
+        if (working == null) {
+            status?.let { s ->
+                Hint(
+                    when {
+                        s.lastBackupMs > 0L ->
+                            "Last backup: ${formatWhen(s.lastBackupMs)}" +
+                                (s.lastResult?.takeIf { it.startsWith("Failed") }
+                                    ?.let { " — since then: $it" } ?: "")
+                        s.lastResult != null -> s.lastResult!!
+                        else -> "No backup yet."
+                    }
+                )
+            }
+        }
+    }
+
+    restoreCandidate?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { restoreCandidate = null },
+            title = { Text("Restore this backup?") },
+            text = {
+                Text(
+                    "Everything on this phone — settings, history, observations, photos and " +
+                        "voice notes — is replaced by what the backup holds. This cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    restoreCandidate = null
+                    working = "Restoring…"
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            BackupManager.restore(context, uri)
+                        }
+                        restoreResult = result.fold(
+                            onSuccess = { it },
+                            onFailure = { "Restore failed: ${it.message}" }
+                        )
+                        working = null
+                        reload += 1
+                    }
+                }) { Text("Replace everything") }
+            },
+            dismissButton = {
+                TextButton(onClick = { restoreCandidate = null }) { Text("Cancel") }
+            }
+        )
+    }
+}
+
+private fun formatWhen(ms: Long): String =
+    SimpleDateFormat("EEE d MMM HH:mm", Locale.getDefault()).format(Date(ms))
 
 fun formatBytes(bytes: Long): String = when {
     bytes <= 0 -> "none"

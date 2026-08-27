@@ -70,6 +70,13 @@ are logged deliberately: the pause button is the escape hatch back into self-adm
 stopping, and seeing your own use of it is part of the practice. Nothing is pruned automatically;
 the Logs screen has a Clear button that keeps the ten most recent events.
 
+**Backups.** Still no `INTERNET` permission: in Settings you pick a folder once in the system
+picker — one that lives in Google Drive, say — and about once a day the app writes a snapshot zip
+there (every table as JSON; photos and voice notes only if you opt in). The Drive app does the
+carrying. The newest seven snapshots are kept, "Back up now" forces one, and "Restore from a
+backup" replaces everything on the phone with a snapshot's contents. A separate "Export CSV"
+button shares the stop history as a spreadsheet that opens straight into Google Sheets.
+
 ## Parameters
 
 | Parameter | Default | Range |
@@ -103,6 +110,7 @@ deliberately untracked. See [docs/releasing.md](docs/releasing.md).
 GStopApp/app/src/main/java/com/gstop/
   core/       pure Kotlin, no Android — the whole scheduling model, fully unit-tested
   data/       Room: settings, sleep windows, the drawn schedule, the event log
+  backup/     snapshots into a user-picked folder (SAF), restore, and the CSV export
   schedule/   alarms, the foreground service that owns a stop, audio and the volume floor
   ui/         Compose: the stop screen, main, settings, logs
 docs/         design documents, the release process, the Obtainium walkthrough
