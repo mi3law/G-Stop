@@ -151,6 +151,7 @@ private fun label(type: HistoryType?, raw: String): String = when (type) {
     HistoryType.TIME_CHANGED -> "Clock or timezone changed"
     HistoryType.SETTINGS_CHANGED -> "Settings changed"
     HistoryType.PERMISSION_WARNING -> "Permission warning"
+    HistoryType.BACKUP -> "Backup"
     null -> raw
 }
 

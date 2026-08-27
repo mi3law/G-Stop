@@ -179,7 +179,8 @@ enum class HistoryType {
     BOOT,
     TIME_CHANGED,
     SETTINGS_CHANGED,
-    PERMISSION_WARNING
+    PERMISSION_WARNING,
+    BACKUP
 }
 
 /**

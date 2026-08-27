@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.gstop.backup.BackupManager
 import com.gstop.data.HistoryType
 import com.gstop.data.Repository
 import com.gstop.data.StopStatus
@@ -60,12 +61,15 @@ class StopAlarmReceiver : BroadcastReceiver() {
     }
 }
 
-/** Local midnight: draw the new day. */
+/** Local midnight: draw the new day, and let the nightly backup ride on the same wake-up. */
 class RolloverReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_ROLLOVER) return
         val appContext = context.applicationContext
-        async { ScheduleManager.regenerate(appContext, "day rollover") }
+        async {
+            ScheduleManager.regenerate(appContext, "day rollover")
+            BackupManager.backupIfDue(appContext)
+        }
     }
 
     companion object {
@@ -88,6 +92,8 @@ class BootReceiver : BroadcastReceiver() {
             repo.log(HistoryType.BOOT, System.currentTimeMillis(), action)
             StopService.ensureChannels(appContext)
             ScheduleManager.regenerate(appContext, "boot / app update")
+            // A phone that was off at midnight missed the rollover's backup; catch up here.
+            BackupManager.backupIfDue(appContext)
         }
     }
 }

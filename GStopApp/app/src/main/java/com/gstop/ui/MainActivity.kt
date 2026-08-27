@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.gstop.BuildConfig
+import com.gstop.backup.BackupManager
 import com.gstop.data.Repository
 import com.gstop.schedule.ScheduleManager
 import com.gstop.schedule.StopService
@@ -107,6 +108,8 @@ fun GStopApp() {
             ) {
                 ScheduleManager.regenerate(context, "app opened — no schedule armed")
             }
+            // The third of the daily wake-ups a backup can ride on, after rollover and boot.
+            BackupManager.backupIfDue(context)
         }
     }
 

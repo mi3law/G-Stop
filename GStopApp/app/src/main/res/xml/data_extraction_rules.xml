@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Room runs the database in WAL mode, so the newest writes live in the -wal sidecar until a
+     checkpoint; a backup of gstop.db alone can be hours stale. -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="database" path="gstop.db" />
+        <include domain="database" path="gstop.db-wal" />
+        <include domain="database" path="gstop.db-shm" />
     </cloud-backup>
     <device-transfer>
         <include domain="database" path="gstop.db" />
+        <include domain="database" path="gstop.db-wal" />
+        <include domain="database" path="gstop.db-shm" />
     </device-transfer>
 </data-extraction-rules>
