@@ -92,7 +92,7 @@ Requires JDK 17 and the Android SDK (platform 35, build-tools 35.0.0), on Window
 cd GStopApp && ./gradlew assembleDebug
 ```
 
-Unit tests — the sampler, the active timeline, regeneration (41 tests):
+Unit tests — the sampler, the active timeline, regeneration (65 tests):
 
 ```bash
 cd GStopApp && ./gradlew testDebugUnitTest

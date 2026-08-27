@@ -118,8 +118,26 @@ Two files, both deliberately untracked and both irreplaceable:
 survives this machine. They are the only things in this project that cannot be rebuilt from
 source.
 
-`build.gradle.kts` signs release builds only when both are present. Without them the release
-build produces an unsigned APK rather than silently signing with a different key.
+`build.gradle.kts` signs release and debug builds only when both are present. Without them the
+release build produces an unsigned APK, and a debug build falls back to Gradle's own
+`CN=Android Debug` key, rather than either silently signing with something publishable.
+
+### Checking what signed an APK
+
+Worth doing on any release cut from a machine for the first time. Both assets must report the
+same certificate digest:
+
+```bash
+"$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs G-Stop-1.5.apk
+```
+
+```bash
+"$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs G-Stop-dev-1.5.apk
+```
+
+On macOS `apksigner` needs a JDK on `PATH`, which the Homebrew `openjdk@17` is not by default:
+prefix the command with `PATH="$JAVA_HOME/bin:$PATH"`. A digest of `CN=Android Debug` means the
+keystore was not picked up and neither APK should be published.
 
 ## Toolchain
 
