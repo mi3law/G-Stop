@@ -123,9 +123,43 @@ build produces an unsigned APK rather than silently signing with a different key
 
 ## Toolchain
 
-The script reads `JAVA_HOME`, `ANDROID_HOME` and `GSTOP_GRADLE` if set, and otherwise falls back
-to `%LOCALAPPDATA%\GStopToolchain` and `%LOCALAPPDATA%\Android\Sdk`, then to the Gradle wrapper.
-Requires JDK 17 and Android platform 35 / build-tools 35.0.0.
+Both scripts run on Windows and macOS. `toolchain.ps1` resolves where the tools are and is the
+only place that knows about either platform; `JAVA_HOME`, `ANDROID_HOME` and `GSTOP_GRADLE` always
+win if set. Requires JDK 17 and Android platform 35 / build-tools 35.0.0 either way.
+
+| | Windows | macOS |
+|---|---|---|
+| JDK | `%LOCALAPPDATA%\GStopToolchain\jdk` | Homebrew `openjdk@17`, else `java_home -v 17` |
+| SDK | `%LOCALAPPDATA%\Android\Sdk` | `~/Library/Android/sdk`, else the Homebrew cask root |
+| Gradle | `%LOCALAPPDATA%\GStopToolchain\gradle`, else the wrapper | the wrapper |
+
+### Setting up a Mac
+
+macOS needs PowerShell, since the scripts are PowerShell:
+
+```bash
+brew install powershell openjdk@17
+brew install --cask android-commandlinetools
+```
+
+Then accept the SDK licences and install the platform — Google requires the licence agreement
+before any package will install:
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+```
+
+Run the scripts with `pwsh ./dev.ps1`, `pwsh ./release.ps1 -Version 1.5`.
+
+**The keystore does not come with the repository.** `keystore/gstop-release.jks` and
+`GStopApp/keystore.properties` are untracked, and deliberately: they are the two files that cannot
+be rebuilt. A second machine needs them copied across by hand, through something that does not
+leave the passwords lying around — an encrypted archive or a password manager, not email. Until
+they are there, that machine can build and test but both scripts will refuse to produce anything
+installable, which is the intended failure.
 
 ## Doing it by hand
 

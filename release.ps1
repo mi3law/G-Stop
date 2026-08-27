@@ -23,8 +23,8 @@
     installs straight over the copy Obtainium put there, keeping the practice history — which is
     the whole point of trying it first.
 
-    Toolchain locations are taken from JAVA_HOME / ANDROID_HOME / GSTOP_GRADLE if set,
-    otherwise from the defaults below.
+    Runs on Windows or macOS. Toolchain locations are taken from JAVA_HOME / ANDROID_HOME /
+    GSTOP_GRADLE if set, otherwise from the per-platform defaults in toolchain.ps1.
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Version,
@@ -37,16 +37,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = $PSScriptRoot
-$appDir      = Join-Path $projectRoot "GStopApp"
-$toolchain   = Join-Path $env:LOCALAPPDATA "GStopToolchain"
-
-if (-not $env:JAVA_HOME)        { $env:JAVA_HOME        = Join-Path $toolchain "jdk" }
-if (-not $env:ANDROID_HOME)     { $env:ANDROID_HOME     = Join-Path $env:LOCALAPPDATA "Android\Sdk" }
-if (-not $env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME }
-if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = Join-Path $toolchain "gradle_home" }
-
-$gradle = if ($env:GSTOP_GRADLE) { $env:GSTOP_GRADLE } else { Join-Path $toolchain "gradle\bin\gradle.bat" }
-if (-not (Test-Path $gradle)) { $gradle = Join-Path $appDir "gradlew.bat" }
+. (Join-Path $projectRoot "toolchain.ps1")
+$tools  = Resolve-GStopToolchain -ProjectRoot $projectRoot
+$appDir = $tools.AppDir
+$gradle = $tools.Gradle
 
 if (-not (Test-Path (Join-Path $appDir "keystore.properties"))) {
     throw "keystore.properties is missing. Without it the APK is unsigned and Obtainium cannot update it."
@@ -88,7 +82,7 @@ Copy-Item $apk $asset -Force
 Copy-Item $devApk $devAsset -Force
 
 if ($NoPublish) {
-    $adb = if ($env:ANDROID_HOME) { Join-Path $env:ANDROID_HOME "platform-tools\adb.exe" } else { "adb" }
+    $adb = $tools.Adb
     Write-Host ""
     Write-Host "Built and signed. Nothing was tagged and nothing was published." -ForegroundColor Green
     Write-Host "  $asset"

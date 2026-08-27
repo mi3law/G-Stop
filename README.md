@@ -85,7 +85,8 @@ the Logs screen has a Clear button that keeps the ten most recent events.
 
 ## Building
 
-Requires JDK 17 and the Android SDK (platform 35, build-tools 35.0.0).
+Requires JDK 17 and the Android SDK (platform 35, build-tools 35.0.0), on Windows or macOS.
+[docs/releasing.md](docs/releasing.md) has the setup for each.
 
 ```bash
 cd GStopApp && ./gradlew assembleDebug

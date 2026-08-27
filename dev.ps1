@@ -16,6 +16,8 @@
     its own database, so nothing done to it can touch a real practice log. Reinstalling over it
     keeps that database; only uninstalling clears it.
 
+    Runs on Windows or macOS; toolchain.ps1 resolves where the tools are.
+
     Signing is the release keystore, the same key release.ps1 uses. That is what lets this script
     replace a dev app that Obtainium installed from a release, and lets the next release replace
     this one. The two apps stay distinct by applicationId, name and icon, not by key.
@@ -28,18 +30,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = $PSScriptRoot
-$appDir      = Join-Path $projectRoot "GStopApp"
-$toolchain   = Join-Path $env:LOCALAPPDATA "GStopToolchain"
-
-if (-not $env:JAVA_HOME)        { $env:JAVA_HOME        = Join-Path $toolchain "jdk" }
-if (-not $env:ANDROID_HOME)     { $env:ANDROID_HOME     = Join-Path $env:LOCALAPPDATA "Android\Sdk" }
-if (-not $env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME }
-if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = Join-Path $toolchain "gradle_home" }
-
-$gradle = if ($env:GSTOP_GRADLE) { $env:GSTOP_GRADLE } else { Join-Path $toolchain "gradle\bin\gradle.bat" }
-if (-not (Test-Path $gradle)) { $gradle = Join-Path $appDir "gradlew.bat" }
-
-$adb = Join-Path $env:ANDROID_HOME "platform-tools\adb.exe"
+. (Join-Path $projectRoot "toolchain.ps1")
+$tools  = Resolve-GStopToolchain -ProjectRoot $projectRoot
+$appDir = $tools.AppDir
+$gradle = $tools.Gradle
+$adb    = $tools.Adb
 
 # Without it the debug build falls back to Gradle's own debug key, and an APK signed with that
 # cannot replace — or be replaced by — the dev app published alongside a release. Failing here is
