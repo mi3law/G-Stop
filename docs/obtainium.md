@@ -112,13 +112,17 @@ open the app once — that alone re-arms the schedule.
 ## 6. If an update refuses to install
 
 Android will reject an update signed with a different key than the installed version, usually
-with *"App not installed"* or a signature-mismatch error. That should never happen if releases
-are produced by `release.ps1`, which always uses the same keystore.
+with *"App not installed"* or a signature-mismatch error.
 
-If it ever does, the only remedy is to uninstall G-Stop and install fresh — **which deletes your
-history log and settings**. So:
+**This will happen once, going from v1.4 to v1.5.** The signing key changed at v1.5 when the
+project gained a second development machine. If you have v1.4 or earlier installed, uninstall it
+before installing v1.5 — **which deletes that install's history log and settings**. There is no
+way around it and no export; it was judged acceptable because the only install at the time was
+days old. From v1.5 onwards updates install over each other normally again.
 
-> Back up `keystore/gstop-release.jks` and `GStopApp/keystore.properties` somewhere durable.
+Otherwise it should never happen: `release.ps1` always signs with the same keystore.
+
+> Back up `keystore/gstop-release-2.jks` and `GStopApp/keystore.properties` somewhere durable.
 > Losing them means never being able to update an installed copy of G-Stop again.
 
 A password manager or an encrypted archive is fine. They are the only two files in this project

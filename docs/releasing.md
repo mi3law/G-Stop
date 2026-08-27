@@ -107,11 +107,26 @@ Every release must be signed with the **same key**, or the update will not insta
 existing G-Stop install, and the only way forward is uninstall-and-reinstall, which deletes the
 history log and settings.
 
+### The key changed at v1.5
+
+v1.0 through v1.4 were signed with `keystore/gstop-release.jks`, which lived on one Windows
+machine. v1.5 onwards is signed with `keystore/gstop-release-2.jks`, generated when the work moved
+to a second machine. Anything installed from v1.4 or earlier must be uninstalled before v1.5 will
+install, losing that install's history — which was acceptable exactly once, because the only
+install was a few days old.
+
+The old key has not been deleted and should not be: it is the only thing that could sign an update
+for a pre-v1.5 install, and keeping it costs nothing. Never overwrite it with the new one.
+
+That this was survivable is not a general licence. It was survivable because the app had one user
+with a disposable log. Both keys are still irreplaceable, and the backup rule below applies to the
+new one exactly as it did to the old.
+
 Two files, both deliberately untracked and both irreplaceable:
 
 | File | What it is |
 |---|---|
-| `keystore/gstop-release.jks` | The signing key (RSA 4096, valid 30 years) |
+| `keystore/gstop-release-2.jks` | The signing key (RSA 4096, valid 30 years) |
 | `GStopApp/keystore.properties` | Its passwords and alias |
 
 **Back both up somewhere durable** — a password manager, an encrypted archive, anywhere that
@@ -172,7 +187,7 @@ sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
 Run the scripts with `pwsh ./dev.ps1`, `pwsh ./release.ps1 -Version 1.5`.
 
-**The keystore does not come with the repository.** `keystore/gstop-release.jks` and
+**The keystore does not come with the repository.** `keystore/gstop-release-2.jks` and
 `GStopApp/keystore.properties` are untracked, and deliberately: they are the two files that cannot
 be rebuilt. A second machine needs them copied across by hand, through something that does not
 leave the passwords lying around — an encrypted archive or a password manager, not email. Until
