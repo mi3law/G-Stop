@@ -6,7 +6,8 @@ one appears. It is the closest thing to a Play Store update flow for a side-load
 store, an account, or anything phoning home about you.
 
 It suits G-Stop exactly: the app is deliberately outside the Play Store, and this repository
-publishes each version as a GitHub release with the APK attached.
+publishes each version as a GitHub release with the APK attached — two APKs, in fact: the app,
+and the dev build of the same commit for anyone who wants it (step 3).
 
 ## 1. Install Obtainium itself
 
@@ -37,7 +38,10 @@ Obtainium can keep itself updated once installed — it adds itself as its own f
    | Setting | Value | Why |
    |---|---|---|
    | **Include prereleases** | off | Releases here are tagged `v1.0`, `v1.1`, … and are not prereleases |
-   | **APK filter (regex)** | `G-Stop-.*\.apk` | Only ever matches the app APK, even if a release later carries other assets |
+   | **APK filter (regex)** | `^G-Stop-\d[\d.]*\.apk$` | Every release carries a dev APK as well. Anchored and digits-only so it matches `G-Stop-1.4.apk` and never `G-Stop-dev-1.4.apk` |
+
+   The filter matters more than it looks. An unanchored `G-Stop-.*\.apk` matches the dev asset
+   too, and Obtainium then asks which APK you meant on every update of the real app.
 
 4. Tap **Add**. Obtainium fetches the release list and shows the latest version.
 5. Tap **Install**. Android will ask for permission to install from Obtainium — allow it.
@@ -45,7 +49,32 @@ Obtainium can keep itself updated once installed — it adds itself as its own f
 That's the whole setup. G-Stop now appears on Obtainium's home screen with its installed version
 and the latest available one.
 
-## 3. Grant G-Stop its permissions
+## 3. The dev app, if you want it
+
+Every release also carries `G-Stop-dev-<version>.apk` — the same commit built as the dev app.
+It is a separate app: `com.gstop.debug`, labelled **G-Stop dev**, ringed in orange, bannered
+across the top of its screens, and with its own database. Nothing done to it can touch a real
+practice log, and it can sit on the phone beside the real app indefinitely.
+
+It exists for a phone that cannot easily be plugged into the development machine. The build is
+debuggable and unminified, so a problem that only shows up on that particular phone can be
+reproduced on it without a cable.
+
+Skip this if you only want to practise. To add it, repeat step 2 with the same repository URL and
+one different setting:
+
+| Setting | Value |
+|---|---|
+| **APK filter (regex)** | `^G-Stop-dev-` |
+
+Obtainium will hold two entries pointing at the same repository, updating together off the same
+release. Because both APKs are signed with the same key, a dev build pushed over USB with
+`dev.ps1` and one installed here replace each other freely.
+
+A dev build is not a safer real app. It is the same scheduling code, but it is the build things
+get tried on, so treat its log as scratch.
+
+## 4. Grant G-Stop its permissions
 
 Open G-Stop once after installing. The main screen shows a card for anything the OS is
 withholding, each with a button that opens the right system page. Clear all of them:
@@ -57,7 +86,7 @@ withholding, each with a button that opens the right system page. Clear all of t
 
 When they are all clear the screen reads *"Supersession checks passed."*
 
-## 4. Living with it
+## 5. Living with it
 
 **Update checks.** Obtainium checks on its own schedule — by default roughly every few hours in
 the background. You can change the interval in Obtainium's **Settings → Background update
@@ -80,7 +109,7 @@ regenerates, so you want to know when it happened.
 schedule the first time it is opened or at the next midnight rollover. If you want to be certain,
 open the app once — that alone re-arms the schedule.
 
-## 5. If an update refuses to install
+## 6. If an update refuses to install
 
 Android will reject an update signed with a different key than the installed version, usually
 with *"App not installed"* or a signature-mismatch error. That should never happen if releases
@@ -95,7 +124,8 @@ history log and settings**. So:
 A password manager or an encrypted archive is fine. They are the only two files in this project
 that cannot be reconstructed.
 
-## 6. Removing it
+## 7. Removing it
 
 Uninstall G-Stop like any app, and remove the source from Obtainium with a long press on the app
-card. Nothing is left behind — no account, no server-side state, nothing was ever sent anywhere.
+card. If you added the dev app, it is a second uninstall and a second source to remove. Nothing
+is left behind — no account, no server-side state, nothing was ever sent anywhere.

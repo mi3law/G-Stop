@@ -78,6 +78,14 @@ android {
             applicationIdSuffix = ".debug"
             // So Android's own app list says which build is on the phone, without opening it.
             versionNameSuffix = "-g$gitSha"
+            // Signed with the release key too, so the dev app Obtainium installs from a release
+            // and the one dev.ps1 pushes over USB can replace each other. Nothing is blurred by
+            // this: the two apps still differ by applicationId, name and icon. Falling back to
+            // Gradle's own debug key would make those two paths incompatible on the phone, so
+            // dev.ps1 and release.ps1 both refuse to build without the keystore.
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
             // Kept off so crash traces stay readable — there is nothing here worth obfuscating.

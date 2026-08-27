@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-    Build a signed release APK and publish it as a GitHub release, so Obtainium picks it up.
+    Build the signed release and dev APKs and publish both as a GitHub release, so Obtainium
+    picks them up.
 
 .EXAMPLE
     .\release.ps1 -Version 1.1
@@ -10,6 +11,12 @@
 .NOTES
     Requires GStopApp/keystore.properties and the .jks it points at. Every release must be
     signed with that same key, or the update will not install over an existing G-Stop install.
+
+    Two assets go up: G-Stop-<version>.apk, the app itself, and G-Stop-dev-<version>.apk, the
+    same commit built as the dev app (com.gstop.debug, orange, its own database). The second is
+    there so a phone that cannot easily be wired up can still carry a debuggable build, tracked
+    by its own Obtainium source. Both are signed with the release key, which is what lets
+    dev.ps1 and Obtainium replace each other's dev installs. See docs/obtainium.md.
 
     -NoPublish builds and signs exactly what would be published and then stops, so a version can
     be tried on the phone before anything is tagged. Because it is signed with the same key it
@@ -57,7 +64,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Unit tests failed. Release aborted." }
     }
 
-    & $gradle assembleRelease --no-daemon --console=plain `
+    # Both variants from one invocation and one commit, so the dev APK is never a build behind
+    # the release it is published beside.
+    & $gradle assembleRelease assembleDebug --no-daemon --console=plain `
         "-PversionName=$Version" "-PversionCode=$versionCode"
     if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
 }
@@ -68,17 +77,26 @@ finally {
 $apk = Join-Path $appDir "app\build\outputs\apk\release\app-release.apk"
 if (-not (Test-Path $apk)) { throw "Expected APK not found at $apk" }
 
+$devApk = Join-Path $appDir "app\build\outputs\apk\debug\app-debug.apk"
+if (-not (Test-Path $devApk)) { throw "Expected dev APK not found at $devApk" }
+
+# The names carry the whole contract with Obtainium: its two sources tell these apart by filter
+# alone. G-Stop-dev- must not match the release source's filter — see docs/obtainium.md.
 $asset = Join-Path ([System.IO.Path]::GetTempPath()) "G-Stop-$Version.apk"
+$devAsset = Join-Path ([System.IO.Path]::GetTempPath()) "G-Stop-dev-$Version.apk"
 Copy-Item $apk $asset -Force
+Copy-Item $devApk $devAsset -Force
 
 if ($NoPublish) {
     $adb = if ($env:ANDROID_HOME) { Join-Path $env:ANDROID_HOME "platform-tools\adb.exe" } else { "adb" }
     Write-Host ""
     Write-Host "Built and signed. Nothing was tagged and nothing was published." -ForegroundColor Green
     Write-Host "  $asset"
+    Write-Host "  $devAsset  (the dev app, com.gstop.debug)"
     Write-Host ""
     Write-Host "With the phone plugged in and USB debugging on, install it with:" -ForegroundColor Cyan
     Write-Host "  & `"$adb`" install -r `"$asset`""
+    Write-Host "  & `"$adb`" install -r -d `"$devAsset`""
     Write-Host ""
     Write-Host "Same key as every release, so it replaces the installed copy in place and the"
     Write-Host "practice history survives. Run without -NoPublish when you are ready to ship it."
@@ -96,7 +114,7 @@ Set-Content -Path $notesFile -Value $Notes -Encoding utf8
 
 Write-Host "Publishing $tag to $Repo ..." -ForegroundColor Cyan
 try {
-    & gh release create $tag $asset --repo $Repo --title "G-Stop $Version" `
+    & gh release create $tag $asset $devAsset --repo $Repo --title "G-Stop $Version" `
         --notes-file $notesFile --target main
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
 }

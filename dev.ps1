@@ -16,8 +16,9 @@
     its own database, so nothing done to it can touch a real practice log. Reinstalling over it
     keeps that database; only uninstalling clears it.
 
-    Signing is the machine-local debug key, not the release keystore, so builds from this script
-    can never be confused with something publishable. See release.ps1 for that.
+    Signing is the release keystore, the same key release.ps1 uses. That is what lets this script
+    replace a dev app that Obtainium installed from a release, and lets the next release replace
+    this one. The two apps stay distinct by applicationId, name and icon, not by key.
 #>
 param(
     [switch]$SkipTests,
@@ -40,13 +41,24 @@ if (-not (Test-Path $gradle)) { $gradle = Join-Path $appDir "gradlew.bat" }
 
 $adb = Join-Path $env:ANDROID_HOME "platform-tools\adb.exe"
 
+# Without it the debug build falls back to Gradle's own debug key, and an APK signed with that
+# cannot replace — or be replaced by — the dev app published alongside a release. Failing here is
+# better than finding out on the phone, where the only way out is uninstalling the dev app.
+if (-not (Test-Path (Join-Path $appDir "keystore.properties"))) {
+    throw "keystore.properties is missing. The dev app is signed with the release key so that USB and Obtainium installs can replace each other; see docs/releasing.md."
+}
+
 # The version reads as the last release plus the commit, e.g. 1.3.1-ga1b2c3d — build.gradle.kts
 # appends the sha itself, so only the base is passed here.
 $lastTag = (& git -C $projectRoot describe --tags --abbrev=0 2>$null)
 $baseVersion = if ($LASTEXITCODE -eq 0 -and $lastTag) { $lastTag -replace '^v', '' } else { "0.0" }
 $branch = (& git -C $projectRoot rev-parse --abbrev-ref HEAD)
 
-Write-Host "Building G-Stop dev $baseVersion from $branch" -ForegroundColor Cyan
+# Same formula release.ps1 uses, so a build from here and a published dev APK stay in step rather
+# than one being a downgrade of the other. -d on the install below covers the rest.
+$versionCode = [int](& git -C $projectRoot rev-list --count HEAD) + 1
+
+Write-Host "Building G-Stop dev $baseVersion from $branch (versionCode $versionCode)" -ForegroundColor Cyan
 
 Push-Location $appDir
 try {
@@ -55,7 +67,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Unit tests failed. Nothing was built." }
     }
 
-    & $gradle assembleDebug --no-daemon --console=plain "-PversionName=$baseVersion"
+    & $gradle assembleDebug --no-daemon --console=plain `
+        "-PversionName=$baseVersion" "-PversionCode=$versionCode"
     if ($LASTEXITCODE -ne 0) { throw "Debug build failed." }
 }
 finally {
@@ -84,7 +97,10 @@ if (-not $ready) {
     return
 }
 
-& $adb install -r $apk
+# -d allows a downgrade: a branch can sit behind the last published dev APK on commit count, and
+# what is being tried by hand should win over what a release left there. Permitted because the dev
+# app is debuggable.
+& $adb install -r -d $apk
 if ($LASTEXITCODE -ne 0) { throw "adb install failed." }
 
 Write-Host "G-Stop dev $baseVersion is on the phone." -ForegroundColor Green

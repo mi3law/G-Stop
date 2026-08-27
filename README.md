@@ -20,7 +20,10 @@ The app is distributed as a side-loaded APK, not through the Play Store.
 notifications): add this repository's URL as an app source. See
 [docs/obtainium.md](docs/obtainium.md) for the walkthrough.
 
-**By hand:** download the APK from [Releases](../../releases) and open it on the phone.
+**By hand:** download the APK from [Releases](../../releases) and open it on the phone. Each
+release also carries `G-Stop-dev-<version>.apk` — the same commit built as the dev app, a separate
+install with its own database, for debugging on a phone without a cable. Ignore it unless you want
+that.
 
 **With adb:**
 

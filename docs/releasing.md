@@ -17,6 +17,10 @@ has been on the phone", not "this compiled". Nothing installs from a branch and 
 from `main` either — Obtainium reads published releases — which is exactly what leaves `main` free
 to carry that meaning.
 
+A release publishes the dev app too (below), so the dev build *does* reach a phone without a
+cable — but only ever as a release, never from a branch. Step 2 stays the only way a branch gets
+onto a phone, and it is still the review.
+
 No pull requests, deliberately. With no CI and no second reviewer a PR runs no checks and reviews
 nothing; it is a reading surface, and for an app whose failures are things like a back gesture or
 a widget that looks like the wrong app, the phone is the better one. Two PRs exist in the history
@@ -40,8 +44,8 @@ question without the app being opened.
 
 ## Releasing
 
-Obtainium watches this repository's GitHub releases. Publishing a new version means: build a
-signed APK, attach it to a tagged release. `release.ps1` at the repository root does both.
+Obtainium watches this repository's GitHub releases. Publishing a new version means: build the
+signed APKs, attach them to a tagged release. `release.ps1` at the repository root does both.
 
 ```powershell
 .\release.ps1 -Version 1.1
@@ -51,6 +55,25 @@ signed APK, attach it to a tagged release. `release.ps1` at the repository root 
 It runs the unit tests first and aborts if any fail (`-SkipTests` overrides, but don't).
 `versionCode` is derived from the commit count so it always increases — Android refuses an update
 whose `versionCode` is not higher than the installed one.
+
+### The two assets
+
+Each release carries both builds of the same commit:
+
+| Asset | Package | What it is |
+|---|---|---|
+| `G-Stop-<version>.apk` | `com.gstop` | The app |
+| `G-Stop-dev-<version>.apk` | `com.gstop.debug` | The dev app — orange, bannered, own database |
+
+The dev asset is there so a phone that is awkward to wire up can still carry a debuggable build,
+tracked by its own Obtainium source with the filter `^G-Stop-dev-`. The release source's filter is
+anchored (`^G-Stop-\d[\d.]*\.apk$`) so it never matches the dev asset — see
+[obtainium.md](obtainium.md).
+
+Note what this does and does not change. The dev app on a phone now follows *releases* by default,
+which makes it a debug-flavoured twin of the release rather than whatever branch was last flashed
+over USB. `dev.ps1` still overrides it at any moment, and that is still the loop; the published
+dev APK is for the phone the cable does not reach.
 
 ## Trying a version before publishing it
 
@@ -62,8 +85,8 @@ published, then stops before tagging anything:
 .\release.ps1 -Version 1.3.1 -NoPublish
 ```
 
-It prints the APK's path and the `adb install -r` line for it. Because it carries the same
-signature as every release, it installs **over** the copy Obtainium put on the phone and the
+It prints both APKs' paths and the `adb install` line for each. Because they carry the same
+signature as every release, each installs **over** the copy Obtainium put on the phone and the
 practice history survives — it is the real thing, just not announced.
 
 Two things to know:
@@ -121,3 +144,19 @@ The debug build type carries `applicationIdSuffix = ".debug"`, so a debug build 
 `com.gstop.debug` and can sit next to an installed release copy without a signature clash. It
 keeps its own separate database, so experimenting with a debug build will not disturb a real
 practice log.
+
+It is signed with the **release key**, not Gradle's debug key. That is what lets a build from
+`dev.ps1` and one Obtainium installed from a release replace each other on the phone; with two
+different keys the second install of either kind fails with a signature mismatch and the only way
+out is uninstalling the dev app. Both scripts therefore refuse to build without
+`keystore.properties` rather than falling back to the debug key, which would produce an APK that
+looks fine and cannot be installed over. The two apps are still impossible to confuse — different
+`applicationId`, different name, different icon — and nothing published as the dev app can pass as
+the real one, because Android keys the identity off the package, not the signature.
+
+`dev.ps1` passes the same commit-count `versionCode` as a release, so a branch build is not a
+downgrade of the last published dev APK, and installs with `-d` so that trying something by hand
+always wins over what a release left there.
+
+Debuggability is unaffected by any of this: it comes from the build type, so `adb`, logcat and
+attaching a debugger work exactly as before.
