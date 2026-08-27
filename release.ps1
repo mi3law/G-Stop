@@ -92,8 +92,10 @@ if ($NoPublish) {
     Write-Host "  & `"$adb`" install -r `"$asset`""
     Write-Host "  & `"$adb`" install -r -d `"$devAsset`""
     Write-Host ""
-    Write-Host "Same key as every release, so it replaces the installed copy in place and the"
-    Write-Host "practice history survives. Run without -NoPublish when you are ready to ship it."
+    Write-Host "Same key as every release from v1.5 on, so it replaces an installed copy in place"
+    Write-Host "and the practice history survives. A v1.4-or-earlier install is the exception: it"
+    Write-Host "was signed with the old key and must be uninstalled first, losing its history."
+    Write-Host "Run without -NoPublish when you are ready to ship it."
     return
 }
 
