@@ -43,6 +43,29 @@ Obtainium can keep itself updated once installed — it adds itself as its own f
    The filter matters more than it looks. An unanchored `G-Stop-.*\.apk` matches the dev asset
    too, and Obtainium then asks which APK you meant on every update of the real app.
 
+### Finding the APK filter field
+
+There is more than one regex box on that screen, and only one of them is the right one.
+
+Obtainium renders the GitHub-specific and the general settings as a **single list** under the one
+heading *Additional options for GitHub* — there is no separate "Additional options" section to
+look for. The source-specific settings come first: *Include prereleases*, *Fallback to older
+releases*, *Filter release titles by regular expression*, *Filter release notes by regular
+expression*, *Verify the 'latest' tag*, *Sort method*. The general ones follow further down the
+same list.
+
+The APK filter is one of the general ones. Scroll past *Sort method*, then past the *Version
+detection* switch. The field you want sits **immediately above a switch reading "Invert regular
+expression"**, and just before **"Attempt to filter APKs by CPU architecture if possible"**. Use
+those two switches as the landmark rather than the field's own label, which is not reliably
+translated across builds.
+
+**Do not put it in *Filter release titles by regular expression*.** That field filters whole
+releases by their title, and releases here are titled `G-Stop 1.5` — which no APK-filename
+pattern will ever match. Every release gets filtered out and Obtainium reports *"Could not find a
+suitable release"*, an error that reads as though the repository or the URL is wrong when the
+regex is merely in the wrong box.
+
 4. Tap **Add**. Obtainium fetches the release list and shows the latest version.
 5. Tap **Install**. Android will ask for permission to install from Obtainium — allow it.
 
@@ -61,11 +84,14 @@ debuggable and unminified, so a problem that only shows up on that particular ph
 reproduced on it without a cable.
 
 Skip this if you only want to practise. To add it, repeat step 2 with the same repository URL and
-one different setting:
+one different setting — the same field, found the same way:
 
 | Setting | Value |
 |---|---|
 | **APK filter (regex)** | `^G-Stop-dev-` |
+
+Obtainium will not object to the repeated URL: it detects duplicates by the installed package
+name, and these two resolve to `com.gstop` and `com.gstop.debug`.
 
 Obtainium will hold two entries pointing at the same repository, updating together off the same
 release. Because both APKs are signed with the same key, a dev build pushed over USB with
