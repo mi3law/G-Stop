@@ -71,6 +71,7 @@ object BackupCodec {
                     put("durationMs", s.durationMs)
                     put("localDate", s.localDate)
                     put("status", s.status)
+                    put("test", s.test)
                 })
             }
         })
@@ -146,7 +147,8 @@ object BackupCodec {
                 triggerAtMs = s.getLong("triggerAtMs"),
                 durationMs = s.getLong("durationMs"),
                 localDate = s.getString("localDate"),
-                status = s.getString("status")
+                status = s.getString("status"),
+                test = s.optBoolean("test", false)
             )
         }
 

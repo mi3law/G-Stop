@@ -265,6 +265,21 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
 
         BackupSection()
 
+        SectionCard("Test") {
+            Hint(
+                "Fires a stop right now, through the exact flow a scheduled one takes — sounds, " +
+                    "screen, photos, observation window. Useful for checking that a new phone " +
+                    "lets the stop screen through. It is marked Test wherever it is recorded, " +
+                    "and the day's drawn schedule is not touched by it."
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = {
+                scope.launch {
+                    withContext(Dispatchers.IO) { ScheduleManager.fireTestStop(context) }
+                }
+            }) { Text("Trigger a test stop") }
+        }
+
         SectionCard("Logs") {
             Hint(
                 "Everything the app has done — stops, pauses, regenerations, reboots. The " +

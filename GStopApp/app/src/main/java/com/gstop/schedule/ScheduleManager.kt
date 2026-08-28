@@ -180,6 +180,32 @@ object ScheduleManager {
         PracticeWidget.refresh(context)
     }
 
+    /**
+     * A stop outside the draw, for verifying delivery on a new phone or ROM: fired immediately,
+     * through exactly the pipeline a scheduled stop takes — service, sounds, screen, photos,
+     * observation window. The row is marked test, so every record of it says so, and the
+     * minimum-gap reckoning skips it: a test must not move the real stops.
+     *
+     * The duration is still drawn from the settings range and still hidden — a test whose length
+     * you know is not a test of the thing being tested.
+     */
+    suspend fun fireTestStop(context: Context, nowMs: Long = System.currentTimeMillis()) {
+        val repo = Repository.get(context)
+        val params = repo.settings().toSamplingParams()
+        val durationMs = Random.nextLong(params.durationMinMs, params.durationMaxMs + 1)
+        val id = repo.insertStop(
+            ScheduledStopEntity(
+                triggerAtMs = nowMs,
+                durationMs = durationMs,
+                localDate = ScheduleEngine.localDateKey(nowMs, ZoneId.systemDefault()),
+                status = StopStatus.PENDING.name,
+                test = true
+            )
+        )
+        Log.i(TAG, "test stop $id fired from Settings")
+        context.startForegroundService(StopService.beginIntent(context, id, durationMs))
+    }
+
     /** Arms the next pending stop. Called after each stop completes. */
     suspend fun armNext(context: Context, nowMs: Long = System.currentTimeMillis()) {
         mutex.withLock { armNextLocked(context, nowMs) }

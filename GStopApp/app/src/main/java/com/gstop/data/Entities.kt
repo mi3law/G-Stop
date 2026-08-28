@@ -100,7 +100,13 @@ data class ScheduledStopEntity(
     val triggerAtMs: Long,
     val durationMs: Long,
     val localDate: String,
-    val status: String = StopStatus.PENDING.name
+    val status: String = StopStatus.PENDING.name,
+    /**
+     * Fired from Settings rather than drawn. It runs the whole real pipeline, but the record
+     * says so wherever this stop lands, and the schedule never counts it as a stop that
+     * happened — a test must not move the real ones.
+     */
+    val test: Boolean = false
 )
 
 /**
@@ -150,7 +156,8 @@ data class StopRecord(
     val thinking: String?,
     val activity: String?,
     val hasVoiceNote: Boolean,
-    val endedAtMs: Long?
+    val endedAtMs: Long?,
+    val test: Boolean = false
 ) {
     val suppressed: Boolean get() = status == StopStatus.SUPPRESSED.name
 
@@ -159,9 +166,12 @@ data class StopRecord(
             !movement.isNullOrBlank() || !feeling.isNullOrBlank() ||
             !thinking.isNullOrBlank() || !activity.isNullOrBlank()
 
-    /** The three kinds of stop the practice recognises. */
+    /** The three kinds of stop the practice recognises — and the test kind, which says so. */
     val label: String
         get() = when {
+            test && suppressed -> "Test stop suppressed"
+            test && noted -> "Test stop, noted"
+            test -> "Test stop"
             suppressed -> "Stop suppressed"
             noted -> "Stop, noted"
             else -> "Stop"

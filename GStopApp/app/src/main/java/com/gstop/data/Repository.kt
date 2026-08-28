@@ -66,6 +66,9 @@ class Repository(context: Context) {
 
     suspend fun clearPendingStops() = stopDao.deletePending()
 
+    /** A single stop outside the draw — the Settings test trigger is the only caller. */
+    suspend fun insertStop(stop: ScheduledStopEntity): Long = stopDao.insert(stop)
+
     /** A pause sets the drawn stops aside; a resume gives them back or throws them away. */
     suspend fun suspendPendingStops() = stopDao.suspendPending()
 

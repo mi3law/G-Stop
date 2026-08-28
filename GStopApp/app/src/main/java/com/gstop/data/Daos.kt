@@ -56,6 +56,9 @@ interface ScheduledStopDao {
     @Insert
     suspend fun insertAll(stops: List<ScheduledStopEntity>)
 
+    @Insert
+    suspend fun insert(stop: ScheduledStopEntity): Long
+
     @Query("UPDATE scheduled_stops SET status = :status WHERE id = :id")
     suspend fun setStatus(id: Long, status: String)
 
@@ -80,7 +83,8 @@ interface ScheduledStopDao {
     @Query("UPDATE scheduled_stops SET status = 'MISSED' WHERE status = 'PENDING' AND triggerAtMs < :beforeMs")
     suspend fun markMissed(beforeMs: Long)
 
-    @Query("SELECT MAX(triggerAtMs) FROM scheduled_stops WHERE status IN ('FIRED','SUPPRESSED') AND localDate = :localDate")
+    // test = 0: a stop fired from Settings must not push the minimum gap and move the real draw.
+    @Query("SELECT MAX(triggerAtMs) FROM scheduled_stops WHERE status IN ('FIRED','SUPPRESSED') AND localDate = :localDate AND test = 0")
     suspend fun lastActualStopOn(localDate: String): Long?
 }
 
@@ -107,7 +111,8 @@ interface ObservationDao {
         "SELECT s.id AS stopId, s.triggerAtMs AS atMs, s.status AS status, " +
             "o.movement AS movement, o.feeling AS feeling, o.thinking AS thinking, " +
             "o.activity AS activity, " +
-            "IFNULL(o.hasVoiceNote, 0) AS hasVoiceNote, o.endedAtMs AS endedAtMs " +
+            "IFNULL(o.hasVoiceNote, 0) AS hasVoiceNote, o.endedAtMs AS endedAtMs, " +
+            "s.test AS test " +
             "FROM scheduled_stops s LEFT JOIN observations o ON o.stopId = s.id " +
             "WHERE s.status IN ('FIRED','SUPPRESSED') " +
             "ORDER BY s.triggerAtMs DESC, s.id DESC"
