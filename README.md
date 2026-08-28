@@ -74,11 +74,14 @@ stopping, and seeing your own use of it is part of the practice. Nothing is prun
 the Logs screen has a Clear button that keeps the ten most recent events.
 
 **Backups.** Still no `INTERNET` permission: in Settings you pick a folder once in the system
-picker — one that lives in Google Drive, say — and about once a day the app writes a snapshot zip
-there (every table as JSON; photos and voice notes only if you opt in). The Drive app does the
-carrying. The newest seven snapshots are kept, "Back up now" forces one, and "Restore from a
-backup" replaces everything on the phone with a snapshot's contents. A separate "Export CSV"
-button shares the stop history as a spreadsheet that opens straight into Google Sheets.
+picker and about once a day the app writes a snapshot zip there (every table as JSON; photos and
+voice notes only if you opt in). The folder is local — cloud providers such as Google Drive do
+not offer folders to Android's tree picker — so carrying snapshots to the cloud is a sync app's
+job (Autosync for Google Drive, FolderSync) watching that folder. The newest seven snapshots are
+kept, "Back up now" forces one, and "Restore from a backup" replaces everything on the phone with
+a snapshot's contents — restoring *from* Drive works directly, since picking a single file is the
+one thing Drive's provider does support. A separate "Export CSV" button shares the stop history
+as a spreadsheet that opens straight into Google Sheets.
 
 ## Parameters
 
