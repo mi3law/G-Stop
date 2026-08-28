@@ -92,7 +92,36 @@ object SystemState {
         }
     }
 
+    /**
+     * MIUI/HyperOS gates the background activity start behind its own "Display pop-up windows
+     * while running in the background" switch — separate from, and denied by default even
+     * alongside, "display over other apps". No public API reads it and no exception marks its
+     * refusal, so on these devices the app can only point and ask, never verify. Covers Redmi
+     * and POCO too: they all report Xiaomi as the manufacturer.
+     */
+    val isXiaomi: Boolean
+        get() = Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
+
     // --- intents that take the user to the relevant system page ---
+
+    /**
+     * MIUI's own per-app permission editor, where the pop-up switches live. Not a public
+     * activity, so the caller must be ready for a ROM that has moved it — the stock
+     * [appDetailsSettings] page is the fallback.
+     */
+    fun miuiPermissionEditor(context: Context): Intent =
+        Intent("miui.intent.action.APP_PERM_EDITOR")
+            .setClassName(
+                "com.miui.securitycenter",
+                "com.miui.permcenter.permissions.PermissionsEditorActivity"
+            )
+            .putExtra("extra_pkgname", context.packageName)
+
+    fun appDetailsSettings(context: Context): Intent =
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:${context.packageName}")
+        )
 
     fun exactAlarmSettings(context: Context): Intent? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
