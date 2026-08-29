@@ -125,6 +125,11 @@ way above adds the real app only):
 | Setting | Value |
 |---|---|
 | **APK filter (regex)** | `^G-Stop-dev-` |
+| **Include prereleases** | on |
+
+Prereleases are the one setting where the two sources should disagree. A version can be published
+as a prerelease so that it reaches the dev app and nothing else — see
+[releasing.md](releasing.md) — which only works if this source is the one looking for them.
 
 Obtainium will not object to the repeated URL: it detects duplicates by the installed package
 name, and these two resolve to `com.gstop` and `com.gstop.debug`.

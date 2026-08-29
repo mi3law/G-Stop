@@ -101,6 +101,39 @@ For iterating on something visible — a widget, a screen — prefer the debug b
 alongside the real app with its own database, so nothing you do to it can touch a real practice
 log. Version numbering: patch (`1.3.1`) for fixes, minor (`1.4`) for anything new.
 
+## Reaching the dev app without reaching the real one
+
+`-NoPublish` needs a cable. When the phone to test on is the one the cable does not reach, the
+only way in is a published release — and a published release carries the real app too.
+
+`-Prerelease` is the way round that. It marks the GitHub release as a prerelease, and the two
+Obtainium sources part company over it:
+
+```powershell
+.\release.ps1 -Version 1.6-rc1 -Prerelease
+```
+
+The release source has *Include prereleases* off, so it does not see the release at all. Turn that
+setting **on** for the dev source and it does — one toggle, once, on the source added with the
+`^G-Stop-dev-` filter. The dev app updates; nothing offers the real app an update.
+
+Name the version so it says what it is (`1.6-rc1`). That is belt and braces rather than decoration:
+the release source's filter is `^G-Stop-\d[\d.]*\.apk$`, digits and dots only, so `G-Stop-1.6-rc1.apk`
+could not match it even if the prerelease flag were forgotten.
+
+Then publish the real thing from the same commit or a later one:
+
+```powershell
+.\release.ps1 -Version 1.6
+```
+
+Two things follow from `versionCode` being the commit count. Publishing 1.6 from the same commit
+gives it the same `versionCode` as the rc, which installs fine — Android refuses a *lower* one, not
+an equal one. And the rc stays in the release list for good; a release cannot be unpublished
+without deleting the tag, so treat an rc as published history like any other.
+
+`-NoPublish` tags nothing, so combining the two switches does nothing useful; `-NoPublish` wins.
+
 ## Signing — the part that matters
 
 Every release must be signed with the **same key**, or the update will not install over an
