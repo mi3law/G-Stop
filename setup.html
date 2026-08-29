@@ -127,6 +127,11 @@
     justify-content: center;
     transform: translateY(-.1em);
   }
+  /* Two independent modifiers: `spaced` sets a section further apart from the one
+     above it, `unnumbered` keeps it out of the count without changing anything else. */
+  .step.spaced { margin-top: 1.25rem; }
+  .step.unnumbered > h2 { counter-increment: none; }
+  .step.unnumbered > h2::before { display: none; }
   .step p { margin: 0; }
   .step ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: .45rem; }
   .step li::marker { color: var(--accent); }
@@ -188,7 +193,8 @@
   /* ---- closing note ---- */
   .coda {
     border-top: 1px solid var(--rule);
-    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.75rem;
     display: flex;
     flex-direction: column;
     gap: .8rem;
@@ -218,59 +224,64 @@
       <circle class="node" cx="50" cy="6" r="2.6"></circle>
     </svg>
     <h1>Setting Up G-Stop</h1>
-    <p class="standfirst">At an unpredictable moment, a sound commands the stop. You freeze exactly as you are and hold it. A second sound, after a hidden interval, releases you.</p>
+    <p class="standfirst">The Gurdjieff "Stop!" exercise as an Android app that plays the part of the teacher for solo practice.</p>
   </header>
 
   <div class="steps">
 
     <section class="step">
       <h2>Install it</h2>
-      <p>G-Stop isn't on the Play Store, so it installs as an APK. Nothing here needs Developer options or USB debugging &mdash; just Android's <em>install unknown apps</em> permission, which it asks for at the moment you install and which you can revoke afterwards.</p>
-      <p>First get <strong>Obtainium</strong>, which watches for new versions of G-Stop and tells you when one appears:</p>
-      <a class="action secondary" href="https://github.com/ImranR98/Obtainium/releases" target="_blank" rel="noopener">Download Obtainium
-        <span class="sub">github.com/ImranR98/Obtainium</span></a>
-      <p>Open the downloaded file. Android will ask whether your browser may install unknown apps &mdash; allow it. Then come back here and tap:</p>
-      <a class="action" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D" target="_blank" rel="noopener">Add G-Stop to Obtainium
-        <span class="sub">carries the whole configuration &mdash; nothing to fill in</span></a>
-      <p>Obtainium shows the configuration it's about to add. Confirm it, tap <strong>Install</strong>, and allow Obtainium to install unknown apps when Android asks. That's the install done.</p>
-      <div class="aside"><strong>Don't want Obtainium?</strong> Download the APK straight from the <a href="https://github.com/mi3law/G-Stop/releases/latest" target="_blank" rel="noopener">releases page</a> and open it. Same app &mdash; you'll just have to check that page yourself for new versions.</div>
+      <p>G-Stop is a private Android app (sideloading), not yet on the Play Store. You will need to set Android's <em>install unknown apps</em> permission, which is asked for at the moment you install and which you can revoke afterwards.</p>
+      <p>First, install <strong>Obtainium</strong>, which is like an app store for private apps:</p>
+      <a class="action secondary" href="https://github.com/ImranR98/Obtainium/releases/latest/download/app-arm64-v8a-release.apk" target="_blank" rel="noopener">Download &amp; Install Obtainium
+        <span class="sub">from its official repo: github.com/ImranR98/Obtainium</span></a>
+      <p>Then, come back here and tap:</p>
+      <a class="action" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D" target="_blank" rel="noopener">Add G-Stop to Obtainium</a>
+      <p>Obtainium shows the G-Stop configuration it's about to add. Confirm it, tap <strong>Install</strong>, and allow Obtainium to install unknown apps when Android asks.</p>
+      <p> The install is done!</p>
+      <div class="aside"><strong>Don't want Obtainium?</strong> Download the G-Stop APK straight from the <a href="https://github.com/mi3law/G-Stop/releases/latest" target="_blank" rel="noopener">releases page</a> and open it. Same app &mdash; you'll just have to check the G-Stop Github repo yourself for new versions.</div>
     </section>
 
     <section class="step">
-      <h2>Grant the permissions</h2>
-      <p>Open G-Stop. The main screen shows a card for anything the system is withholding, each with a button that opens the right settings page. Clear all of them:</p>
+      <h2>Grant permissions to enable G-Stops</h2>
+      <p>Open the G-Stop app. The main screen shows a card for anything the system is withholding, each with a button that opens the right settings page. Clear all of them:</p>
       <ul>
         <li><strong>Alarms &amp; reminders</strong> &mdash; without it, stops arrive late or not at all</li>
         <li><strong>Notifications</strong> &mdash; so a stop can take over a locked screen</li>
         <li><strong>Battery optimisation exemption</strong> &mdash; so the schedule survives deep idle</li>
         <li><strong>Do Not Disturb access</strong> &mdash; optional; lets the volume floor work while DND is on</li>
       </ul>
-      <p>You're done when the screen reads <em>&ldquo;Supersession checks passed.&rdquo;</em></p>
+      <p>You're all set and ready for Stops when the screen reads <em>&ldquo;Supersession checks passed.&rdquo;</em></p>
+      <p>After each Stop, you have 5 minutes to record Observation notes about how you were Moving, Feeling, and Thinking, to aid with your Work.</p>
+
     </section>
 
-    <section class="step">
-      <h2>Point it at a backup folder</h2>
-      <p>In <strong>Settings</strong>, choose a folder once &mdash; one inside Google Drive works well. From then on the app writes a snapshot there about once a day and keeps the newest seven. Nothing is uploaded by the app itself; it has no internet permission at all, so the Drive app does the carrying.</p>
-      <p>This takes ten seconds and means a lost or wiped phone doesn't take your history with it.</p>
-    </section>
-
-    <section class="step">
-      <h2>Then just carry it</h2>
-      <p>There's nothing left to configure. Out of the box: two to five stops a day, each lasting between twenty seconds and two minutes, never less than forty-five minutes apart, and nothing between 23:00 and 07:00. All of it is adjustable in Settings.</p>
-      <p>When the alarm sounds, freeze exactly as you are &mdash; posture, expression, gaze &mdash; and hold until the second, different sound releases you. There's no countdown on screen on purpose: you're not meant to know when it ends.</p>
+    <section class="step unnumbered spaced">
+      <h2>Tweak the G-Stop settings as you prefer</h2>
+      <p>Default settings: <strong>2 to 5 stops a day</strong>, each lasting between <strong>20s & 2m</strong>, never less than forty-five minutes apart, and <strong>nothing between 23:00 and 07:00</strong>.</p>
       <ul>
-        <li><strong>Long-press</strong> during a stop to suppress it &mdash; for driving, stairs, anything where freezing would be dangerous. It's logged as suppressed, not as a failure.</li>
-        <li><strong>Pause</strong> on the main screen for longer stretches when stops wouldn't be welcome.</li>
-        <li><strong>Logs</strong> shows what has happened. What's coming is never shown anywhere.</li>
+        <li><strong>Long-press</strong> during a stop to suppress it &mdash; for driving, stairs, anything where freezing would be dangerous.</li>
+        <li><strong>Pause G-Stop</strong> on the main screen (or the widget) for longer stretches when stops wouldn't be welcome.</li>
+        <li><strong>Set a backup folder</strong> in Settings to save your Stops long-term.</li>
+      </ul>
+
+    </section>
+
+
+    <section class="step spaced">
+      <p class="label">Optional Widget</p>
+      <h2>Put a G-Stop widget on your phone's home screen for easy pause / resume</h2>
+      <p>Find the widget in your phone's regular widgets menu. </p>
+      <ul>
+        <li><strong>One tap</strong> pauses the practice or resumes it.</li>
+        <li><strong>Two quick taps</strong> open the G-Stop app.</li>
       </ul>
     </section>
-
   </div>
-
+  
   <footer class="coda">
-    <p class="label">One last thing</p>
-    <p class="pull">Everything stays on the phone. No account, no server, no telemetry &mdash; the app doesn't even declare the internet permission.</p>
-    <p>When a new version appears, Obtainium notifies you; tap the app, then <strong>Install</strong>. Your settings and history are untouched by an update.</p>
+    <p class="label">Privacy Note</p>
+    <p class="pull">Everything stays on your phone. There's no account, no server, no telemetry, and the app doesn't even use internet permissions.</p>
   </footer>
 
 </div>

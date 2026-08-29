@@ -18,6 +18,11 @@ The app is distributed as a side-loaded APK, not through the Play Store. Nothing
 options is involved: installing needs only the per-app *install unknown apps* permission Android
 asks for at the moment you install, and you can revoke it afterwards.
 
+[setup.html](setup.html) is all of this as a single page to hand to someone who has no interest in
+the repository — install, permissions, backups and how to practise, with the Obtainium link as a
+button. It is a standalone file; GitHub shows its source rather than rendering it, so open it from
+a clone or send it to the phone.
+
 **With [Obtainium](https://github.com/ImranR98/Obtainium)** (recommended — gives you update
 notifications): install Obtainium, then tap
 [**Add G-Stop to Obtainium**](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D)
