@@ -231,8 +231,8 @@ lag.
 
 | # | Check | Expected |
 |---|---|---|
-| 8d.1 | Settings → Backup → Choose, pick a Google Drive folder | The folder's name appears; "Back up now" becomes enabled |
-| 8d.2 | Back up now | "Last backup" shows a time; the zip appears in the Drive folder (let Drive sync); Logs shows a "Backup" line |
+| 8d.1 | Settings → Backup → Choose, pick a local folder (Drive never appears — its provider does not support Android's folder picker) | The folder's name appears; "Back up now" becomes enabled |
+| 8d.2 | Back up now | "Last backup" shows a time; the zip appears in the folder (a sync app, if one watches the folder, carries it to the cloud); Logs shows a "Backup" line |
 | 8d.3 | Open the zip on a computer | `backup.json` only — no photos, no voice notes, while the media switch is off |
 | 8d.4 | Switch "Include photos and voice notes" on, back up again | The same-day zip is replaced and now carries a `media/` folder |
 | 8d.5 | Leave the app overnight with a folder set | A snapshot for the new day appears without opening the app (rollover), or on first open the next morning |
@@ -240,7 +240,7 @@ lag.
 | 8d.7 | Export CSV → save to Drive, then open it | Drive opens it in Google Sheets: one row per stop, oldest first, observations intact |
 | 8d.8 | Restore from a backup on a fresh install | History, observations, settings and sleep windows all return; the schedule is redrawn (Logs shows "backup restored"); no future stop from the old phone survives |
 | 8d.9 | Restore a media-bearing zip | Photos and voice notes open from History rows again |
-| 8d.10 | Airplane mode, then Back up now | Still succeeds — the write is local; Drive syncs it later |
+| 8d.10 | Airplane mode, then Back up now | Still succeeds — the write is local; any watching sync app catches up later |
 
 ## 9. Things that must NOT happen
 

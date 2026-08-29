@@ -265,6 +265,21 @@ fun SettingsScreen(onBack: () -> Unit, onOpenLogs: () -> Unit) {
 
         BackupSection()
 
+        SectionCard("Test") {
+            Hint(
+                "Fires a stop right now, through the exact flow a scheduled one takes — sounds, " +
+                    "screen, photos, observation window. Useful for checking that a new phone " +
+                    "lets the stop screen through. It is marked Test wherever it is recorded, " +
+                    "and the day's drawn schedule is not touched by it."
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = {
+                scope.launch {
+                    withContext(Dispatchers.IO) { ScheduleManager.fireTestStop(context) }
+                }
+            }) { Text("Trigger a test stop") }
+        }
+
         SectionCard("Logs") {
             Hint(
                 "Everything the app has done — stops, pauses, regenerations, reboots. The " +
@@ -352,11 +367,12 @@ private fun ObservationsSection(photosEnabled: Boolean, onTogglePhotos: (Boolean
 }
 
 /**
- * Backups leave the phone only through a folder the user picked in the system picker — on this
- * phone, one that lives in Google Drive, whose app does the uploading. G-Stop itself still has
- * no network permission; everything here is a local file write. The CSV export exists because a
- * spreadsheet is readable in Google Sheets and the backup zip is not: one is for looking at the
- * practice, the other for getting it back.
+ * Backups leave the phone only through a folder the user picked in the system picker. The folder
+ * is always local — cloud providers do not offer folders to Android's tree picker — so reaching
+ * Drive takes a sync app watching the folder; the hint says so rather than promising what the
+ * picker cannot do. G-Stop itself still has no network permission; everything here is a local
+ * file write. The CSV export exists because a spreadsheet is readable in Google Sheets and the
+ * backup zip is not: one is for looking at the practice, the other for getting it back.
  */
 @Composable
 private fun BackupSection() {
@@ -404,8 +420,10 @@ private fun BackupSection() {
             }
         }
         Hint(
-            "Pick a folder in Google Drive and a snapshot is written there about once a day. " +
-                "The Drive app does the carrying; G-Stop never touches the network."
+            "A snapshot is written into this folder about once a day. The folder is on this " +
+                "phone — Android's picker cannot offer Google Drive folders — so to carry " +
+                "snapshots to the cloud, point a sync app such as Autosync for Google Drive " +
+                "at it. G-Stop itself never touches the network."
         )
 
         Spacer(Modifier.height(12.dp))

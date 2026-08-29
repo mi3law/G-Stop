@@ -1,5 +1,6 @@
 package com.gstop.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,8 +28,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -225,12 +228,26 @@ private fun BuildFooter() {
     )
 }
 
+/** Hints the app cannot verify live here, remembered once the user says they are handled. */
+private const val UI_PREFS = "ui_hints"
+private const val KEY_MIUI_POPUP_HANDLED = "miui_popup_handled"
+
 @Composable
 private fun SupersessionWarnings(state: SupersessionState, photosWanted: Boolean) {
     val context = LocalContext.current
     val cameraNeeded = photosWanted && !state.camera
 
-    if (state.allGood && !cameraNeeded) {
+    // Not part of SupersessionState: MIUI's switch cannot be read back, so this hint's
+    // lifecycle is "shown until the user says it is handled", not "shown while false".
+    var miuiHandled by remember {
+        mutableStateOf(
+            context.getSharedPreferences(UI_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_MIUI_POPUP_HANDLED, false)
+        )
+    }
+    val miuiHintWanted = SystemState.isXiaomi && !miuiHandled
+
+    if (state.allGood && !cameraNeeded && !miuiHintWanted) {
         Text(
             text = "Supersession checks passed.",
             style = MaterialTheme.typography.bodySmall,
@@ -261,6 +278,27 @@ private fun SupersessionWarnings(state: SupersessionState, photosWanted: Boolean
                     "screen. Allow \"display over other apps\" to fix that.",
                 actionLabel = "Allow"
             ) { context.startActivity(SystemState.overlaySettings(context)) }
+        }
+        if (miuiHintWanted) {
+            WarningCard(
+                title = "Xiaomi hides one more switch",
+                body = "Even with \"display over other apps\" allowed, this phone keeps the " +
+                    "stop screen behind its own switch. In G-Stop's app settings, under Other " +
+                    "permissions, enable \"Display pop-up windows while running in the " +
+                    "background\" — and \"Show on lock screen\" while you are there. Android " +
+                    "gives the app no way to check either, so press Done once they are on.",
+                actionLabel = "Open settings",
+                dismissLabel = "Done",
+                onDismiss = {
+                    context.getSharedPreferences(UI_PREFS, Context.MODE_PRIVATE)
+                        .edit().putBoolean(KEY_MIUI_POPUP_HANDLED, true).apply()
+                    miuiHandled = true
+                }
+            ) {
+                // MIUI's editor where it exists, the stock app page where a ROM moved it.
+                runCatching { context.startActivity(SystemState.miuiPermissionEditor(context)) }
+                    .onFailure { context.startActivity(SystemState.appDetailsSettings(context)) }
+            }
         }
         if (!state.fullScreenIntent) {
             WarningCard(
@@ -309,6 +347,8 @@ private fun WarningCard(
     title: String,
     body: String,
     actionLabel: String,
+    dismissLabel: String? = null,
+    onDismiss: (() -> Unit)? = null,
     onAction: () -> Unit
 ) {
     Card(
@@ -327,7 +367,12 @@ private fun WarningCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            TextButton(onClick = onAction) { Text(actionLabel) }
+            Row {
+                TextButton(onClick = onAction) { Text(actionLabel) }
+                if (dismissLabel != null && onDismiss != null) {
+                    TextButton(onClick = onDismiss) { Text(dismissLabel) }
+                }
+            }
         }
     }
 }

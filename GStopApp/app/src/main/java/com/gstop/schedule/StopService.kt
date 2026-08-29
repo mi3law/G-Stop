@@ -80,10 +80,12 @@ class StopService : Service() {
         scope.launch {
             val repo = Repository.get(this@StopService)
             val settings = repo.settings()
+            // The one thing that changes for a test stop is what the log says about it.
+            val test = repo.stopById(id)?.test == true
             val now = System.currentTimeMillis()
 
             repo.setStopStatus(id, StopStatus.FIRED)
-            repo.log(HistoryType.STOP_FIRED, now)
+            repo.log(HistoryType.STOP_FIRED, now, if (test) "test" else null)
 
             handler.post {
                 audio.applyVolumeFloor(settings.volumeFloorPercent)
@@ -172,9 +174,10 @@ class StopService : Service() {
         scope.launch {
             val repo = Repository.get(this@StopService)
             val now = System.currentTimeMillis()
+            val test = repo.stopById(id)?.test == true
             repo.setStopStatus(id, StopStatus.SUPPRESSED)
             // Recorded as suppressed, never as failure.
-            repo.log(HistoryType.STOP_SUPPRESSED, now)
+            repo.log(HistoryType.STOP_SUPPRESSED, now, if (test) "test" else null)
         }
         finish()
     }

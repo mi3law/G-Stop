@@ -26,7 +26,8 @@ interface BackupDao {
         "SELECT s.id AS stopId, s.triggerAtMs AS atMs, s.status AS status, " +
             "o.movement AS movement, o.feeling AS feeling, o.thinking AS thinking, " +
             "o.activity AS activity, " +
-            "IFNULL(o.hasVoiceNote, 0) AS hasVoiceNote, o.endedAtMs AS endedAtMs " +
+            "IFNULL(o.hasVoiceNote, 0) AS hasVoiceNote, o.endedAtMs AS endedAtMs, " +
+            "s.test AS test " +
             "FROM scheduled_stops s LEFT JOIN observations o ON o.stopId = s.id " +
             "WHERE s.status IN ('FIRED','SUPPRESSED') " +
             "ORDER BY s.triggerAtMs DESC, s.id DESC"

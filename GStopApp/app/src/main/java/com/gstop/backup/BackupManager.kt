@@ -24,7 +24,9 @@ import java.util.zip.ZipOutputStream
 
 /**
  * Snapshots of the practice record, written into a folder the user picked once in the system
- * picker — on this phone that folder lives in Google Drive, and the Drive app does the carrying.
+ * picker. That folder is always local: cloud providers — Google Drive included — do not offer
+ * folders to Android's tree picker at all, so a snapshot reaches the cloud only when a separate
+ * sync app (Autosync for Google Drive, FolderSync) watches the folder and does the carrying.
  * The app itself still has no network permission: everything here is a local file write through
  * the Storage Access Framework.
  *
@@ -153,7 +155,7 @@ object BackupManager {
         val json = BackupCodec.encode(payload)
 
         val name = "gstop-backup-${localDate(nowMs)}.zip"
-        // Deleting first matters on Drive: createFile over an existing name makes "name (1)".
+        // Deleting first matters: createFile over an existing name makes "name (1)".
         tree.findFile(name)?.delete()
         val file = tree.createFile("application/zip", name)
             ?: error("Could not create $name in the backup folder.")
