@@ -7,6 +7,7 @@
     .\release.ps1 -Version 1.1
     .\release.ps1 -Version 1.2 -Notes "Fixes the volume floor under DND."
     .\release.ps1 -Version 1.3.1 -NoPublish
+    .\release.ps1 -Version 1.6-rc1 -Prerelease
 
 .NOTES
     Requires GStopApp/keystore.properties and the .jks it points at. Every release must be
@@ -23,6 +24,12 @@
     installs straight over the copy Obtainium put there, keeping the practice history — which is
     the whole point of trying it first.
 
+    -Prerelease marks the GitHub release as a prerelease, which is how a version reaches the dev
+    app through Obtainium without reaching anyone's real app. The release source's filter has
+    Include prereleases off, so it does not see one at all; the dev source can have it on. Use it
+    with a version that says so — 1.6-rc1 — which the release filter would refuse anyway, since
+    it matches digits and dots only. -NoPublish tags nothing, so it ignores this.
+
     Runs on Windows or macOS. Toolchain locations are taken from JAVA_HOME / ANDROID_HOME /
     GSTOP_GRADLE if set, otherwise from the per-platform defaults in toolchain.ps1.
 #>
@@ -31,7 +38,8 @@ param(
     [string]$Notes = "",
     [string]$Repo = "mi3law/G-Stop",
     [switch]$SkipTests,
-    [switch]$NoPublish
+    [switch]$NoPublish,
+    [switch]$Prerelease
 )
 
 $ErrorActionPreference = "Stop"
@@ -108,14 +116,28 @@ if ([string]::IsNullOrWhiteSpace($Notes)) { $Notes = "G-Stop $Version" }
 $notesFile = Join-Path ([System.IO.Path]::GetTempPath()) "G-Stop-$Version-notes.md"
 Set-Content -Path $notesFile -Value $Notes -Encoding utf8
 
-Write-Host "Publishing $tag to $Repo ..." -ForegroundColor Cyan
+$kind = if ($Prerelease) { "prerelease" } else { "release" }
+Write-Host "Publishing $tag to $Repo as a $kind ..." -ForegroundColor Cyan
+
+# Built as an array so the optional flag does not have to be spliced into a line continuation.
+$ghArgs = @(
+    "release", "create", $tag, $asset, $devAsset,
+    "--repo", $Repo, "--title", "G-Stop $Version",
+    "--notes-file", $notesFile, "--target", "main"
+)
+if ($Prerelease) { $ghArgs += "--prerelease" }
+
 try {
-    & gh release create $tag $asset $devAsset --repo $Repo --title "G-Stop $Version" `
-        --notes-file $notesFile --target main
+    & gh @ghArgs
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed." }
 }
 finally {
     Remove-Item $notesFile -ErrorAction SilentlyContinue
 }
 
-Write-Host "Released $tag. Obtainium will offer the update on its next check." -ForegroundColor Green
+if ($Prerelease) {
+    Write-Host "Released $tag as a prerelease. Only an Obtainium source with Include prereleases" -ForegroundColor Green
+    Write-Host "turned on will offer it — the release source will not see it at all." -ForegroundColor Green
+} else {
+    Write-Host "Released $tag. Obtainium will offer the update on its next check." -ForegroundColor Green
+}
