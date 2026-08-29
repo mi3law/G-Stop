@@ -14,18 +14,23 @@ permission at all.
 
 ## Install
 
-The app is distributed as a side-loaded APK, not through the Play Store.
+The app is distributed as a side-loaded APK, not through the Play Store. Nothing in Developer
+options is involved: installing needs only the per-app *install unknown apps* permission Android
+asks for at the moment you install, and you can revoke it afterwards.
 
 **With [Obtainium](https://github.com/ImranR98/Obtainium)** (recommended — gives you update
-notifications): add this repository's URL as an app source. See
-[docs/obtainium.md](docs/obtainium.md) for the walkthrough.
+notifications): install Obtainium, then tap
+[**Add G-Stop to Obtainium**](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D)
+on the phone. The link carries the whole configuration — source URL, prereleases off, APK filter —
+so it is one confirmation and one **Install**. [docs/obtainium.md](docs/obtainium.md) has the
+manual walkthrough, the dev app, and how updates behave.
 
 **By hand:** download the APK from [Releases](../../releases) and open it on the phone. Each
 release also carries `G-Stop-dev-<version>.apk` — the same commit built as the dev app, a separate
 install with its own database, for debugging on a phone without a cable. Ignore it unless you want
 that.
 
-**With adb:**
+**With adb** — the one route that does need Developer options, for USB debugging:
 
 ```bash
 adb install -r G-Stop-<version>.apk

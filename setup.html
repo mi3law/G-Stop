@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Installing and using G-Stop on an Android phone, in four steps.">
+<title>Setting Up G-Stop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:        #EDF0F0;
+    --surface:      #F7F9F9;
+    --ink:          #101619;
+    --slate:        #55676A;
+    --rule:         #CFD8D8;
+    --accent:       #23605E;
+    --accent-ink:   #F7F9F9;
+    --accent-soft:  #DCE7E6;
+    --shadow:       0 1px 2px rgba(16, 22, 25, .07), 0 6px 18px -10px rgba(16, 22, 25, .28);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:       #0C1113;
+      --surface:     #151D1F;
+      --ink:         #E4EAEA;
+      --slate:       #94A5A6;
+      --rule:        #2A3639;
+      --accent:      #7FC3BC;
+      --accent-ink:  #0C1113;
+      --accent-soft: #1C2A2B;
+      --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px -10px rgba(0, 0, 0, .7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:       #0C1113;
+    --surface:     #151D1F;
+    --ink:         #E4EAEA;
+    --slate:       #94A5A6;
+    --rule:        #2A3639;
+    --accent:      #7FC3BC;
+    --accent-ink:  #0C1113;
+    --accent-soft: #1C2A2B;
+    --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px -10px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 34rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ---- masthead ---- */
+  .masthead { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
+  .mark { width: 68px; height: 68px; display: block; }
+  .mark circle.ring { fill: none; stroke: var(--rule); stroke-width: 1.6; }
+  .mark path { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linejoin: round; }
+  .mark circle.node { fill: var(--accent); }
+
+  h1 {
+    font-family: Spectral, Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2rem, 8vw, 2.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-family: Spectral, Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 1.09rem;
+    line-height: 1.5;
+    color: var(--slate);
+    margin: 0;
+    max-width: 30rem;
+    text-wrap: balance;
+  }
+
+  /* ---- steps ---- */
+  .steps { display: flex; flex-direction: column; gap: 2.25rem; counter-reset: step; }
+  .step { display: flex; flex-direction: column; gap: .85rem; }
+  .step > h2 {
+    counter-increment: step;
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+    font-family: Spectral, Georgia, serif;
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.25;
+    margin: 0;
+    padding-bottom: .6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .step > h2::before {
+    content: counter(step);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    width: 1.7rem;
+    height: 1.7rem;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-.1em);
+  }
+  .step p { margin: 0; }
+  .step ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: .45rem; }
+  .step li::marker { color: var(--accent); }
+
+  /* ---- action buttons ---- */
+  .action {
+    display: block;
+    background: var(--accent);
+    color: var(--accent-ink);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.02rem;
+    text-align: center;
+    padding: .95rem 1.1rem;
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+  }
+  .action.secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  .action .sub {
+    display: block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .74rem;
+    font-weight: 400;
+    letter-spacing: .02em;
+    opacity: .78;
+    margin-top: .2rem;
+  }
+  a { color: var(--accent); }
+  a:focus-visible, .action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ---- aside ---- */
+  .aside {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: .9rem 1rem;
+    font-size: .93rem;
+    color: var(--slate);
+  }
+  .aside strong { color: var(--ink); font-weight: 600; }
+
+  .label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--slate);
+  }
+
+  /* ---- closing note ---- */
+  .coda {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+  .coda p { margin: 0; font-size: .95rem; color: var(--slate); }
+  .coda .pull {
+    font-family: Spectral, Georgia, serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.45;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 100 100" role="img" aria-label="Enneagram">
+      <circle class="ring" cx="50" cy="50" r="44"></circle>
+      <path d="M 50 6 L 88.11 72 L 11.89 72 Z"></path>
+      <path d="M 78.28 16.29 L 65.05 91.35 L 93.33 42.36 L 21.72 16.29 L 34.95 91.35 L 6.67 42.36 Z"></path>
+      <circle class="node" cx="50" cy="6" r="2.6"></circle>
+    </svg>
+    <h1>Setting Up G-Stop</h1>
+    <p class="standfirst">At an unpredictable moment, a sound commands the stop. You freeze exactly as you are and hold it. A second sound, after a hidden interval, releases you.</p>
+  </header>
+
+  <div class="steps">
+
+    <section class="step">
+      <h2>Install it</h2>
+      <p>G-Stop isn't on the Play Store, so it installs as an APK. Nothing here needs Developer options or USB debugging &mdash; just Android's <em>install unknown apps</em> permission, which it asks for at the moment you install and which you can revoke afterwards.</p>
+      <p>First get <strong>Obtainium</strong>, which watches for new versions of G-Stop and tells you when one appears:</p>
+      <a class="action secondary" href="https://github.com/ImranR98/Obtainium/releases" target="_blank" rel="noopener">Download Obtainium
+        <span class="sub">github.com/ImranR98/Obtainium</span></a>
+      <p>Open the downloaded file. Android will ask whether your browser may install unknown apps &mdash; allow it. Then come back here and tap:</p>
+      <a class="action" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D" target="_blank" rel="noopener">Add G-Stop to Obtainium
+        <span class="sub">carries the whole configuration &mdash; nothing to fill in</span></a>
+      <p>Obtainium shows the configuration it's about to add. Confirm it, tap <strong>Install</strong>, and allow Obtainium to install unknown apps when Android asks. That's the install done.</p>
+      <div class="aside"><strong>Don't want Obtainium?</strong> Download the APK straight from the <a href="https://github.com/mi3law/G-Stop/releases/latest" target="_blank" rel="noopener">releases page</a> and open it. Same app &mdash; you'll just have to check that page yourself for new versions.</div>
+    </section>
+
+    <section class="step">
+      <h2>Grant the permissions</h2>
+      <p>Open G-Stop. The main screen shows a card for anything the system is withholding, each with a button that opens the right settings page. Clear all of them:</p>
+      <ul>
+        <li><strong>Alarms &amp; reminders</strong> &mdash; without it, stops arrive late or not at all</li>
+        <li><strong>Notifications</strong> &mdash; so a stop can take over a locked screen</li>
+        <li><strong>Battery optimisation exemption</strong> &mdash; so the schedule survives deep idle</li>
+        <li><strong>Do Not Disturb access</strong> &mdash; optional; lets the volume floor work while DND is on</li>
+      </ul>
+      <p>You're done when the screen reads <em>&ldquo;Supersession checks passed.&rdquo;</em></p>
+    </section>
+
+    <section class="step">
+      <h2>Point it at a backup folder</h2>
+      <p>In <strong>Settings</strong>, choose a folder once &mdash; one inside Google Drive works well. From then on the app writes a snapshot there about once a day and keeps the newest seven. Nothing is uploaded by the app itself; it has no internet permission at all, so the Drive app does the carrying.</p>
+      <p>This takes ten seconds and means a lost or wiped phone doesn't take your history with it.</p>
+    </section>
+
+    <section class="step">
+      <h2>Then just carry it</h2>
+      <p>There's nothing left to configure. Out of the box: two to five stops a day, each lasting between twenty seconds and two minutes, never less than forty-five minutes apart, and nothing between 23:00 and 07:00. All of it is adjustable in Settings.</p>
+      <p>When the alarm sounds, freeze exactly as you are &mdash; posture, expression, gaze &mdash; and hold until the second, different sound releases you. There's no countdown on screen on purpose: you're not meant to know when it ends.</p>
+      <ul>
+        <li><strong>Long-press</strong> during a stop to suppress it &mdash; for driving, stairs, anything where freezing would be dangerous. It's logged as suppressed, not as a failure.</li>
+        <li><strong>Pause</strong> on the main screen for longer stretches when stops wouldn't be welcome.</li>
+        <li><strong>Logs</strong> shows what has happened. What's coming is never shown anywhere.</li>
+      </ul>
+    </section>
+
+  </div>
+
+  <footer class="coda">
+    <p class="label">One last thing</p>
+    <p class="pull">Everything stays on the phone. No account, no server, no telemetry &mdash; the app doesn't even declare the internet permission.</p>
+    <p>When a new version appears, Obtainium notifies you; tap the app, then <strong>Install</strong>. Your settings and history are untouched by an update.</p>
+  </footer>
+
+</div>
+</body>
+</html>
