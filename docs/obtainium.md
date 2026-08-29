@@ -19,11 +19,46 @@ Obtainium is not on the Play Store either. Get it from one of:
   <https://github.com/ImranR98/Obtainium/releases> and open it on the phone.
 
 Android will ask whether your browser or file manager may install unknown apps. Allow it for that
-one app; you can revoke it afterwards.
+one app; you can revoke it afterwards. That permission is the whole of it — none of this needs
+Developer options or USB debugging, which on this project are only for `adb` and the dev builds
+`dev.ps1` pushes over a cable.
 
 Obtainium can keep itself updated once installed — it adds itself as its own first source.
 
 ## 2. Add G-Stop as a source
+
+### The one-link way
+
+With Obtainium installed, tap this on the phone:
+
+<https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.gstop%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fmi3law%2FG-Stop%22%2C%22author%22%3A%22mi3law%22%2C%22name%22%3A%22G-Stop%22%2C%22additionalSettings%22%3A%22%7B%5C%22includePrereleases%5C%22%3Afalse%2C%5C%22apkFilterRegEx%5C%22%3A%5C%22%5EG-Stop-%5C%5C%5C%5Cd%5B%5C%5C%5C%5Cd.%5D%2A%5C%5C%5C%5C.apk%24%5C%22%7D%22%7D>
+
+Obtainium shows the configuration it is about to add and asks you to confirm; confirm, then tap
+**Install**. Android will ask for permission to install from Obtainium — allow it. That is the
+whole setup, and it skips the field-hunting below.
+
+The link hands over a complete app configuration rather than just a URL — the repository,
+prereleases off, and the APK filter already filled in:
+
+```json
+{
+  "id": "com.gstop",
+  "url": "https://github.com/mi3law/G-Stop",
+  "author": "mi3law",
+  "name": "G-Stop",
+  "additionalSettings": "{\"includePrereleases\":false,\"apkFilterRegEx\":\"^G-Stop-\\\\d[\\\\d.]*\\\\.apk$\"}"
+}
+```
+
+That JSON, url-encoded, is the payload of an `obtainium://app/` deep link. The link above wraps it
+in the crowdsourced directory's redirect page, which tries the deep link and falls back to a "get
+Obtainium" prompt if nothing answers — so it is still useful to someone who has not installed
+Obtainium yet. Some chat apps will not linkify a URL that long; send it on a line of its own, or
+paste it into the browser.
+
+### By hand
+
+If the link does not work, or you would rather see what you are setting:
 
 1. Open Obtainium and tap **Add App**.
 2. In **App Source URL**, paste:
@@ -43,7 +78,7 @@ Obtainium can keep itself updated once installed — it adds itself as its own f
    The filter matters more than it looks. An unanchored `G-Stop-.*\.apk` matches the dev asset
    too, and Obtainium then asks which APK you meant on every update of the real app.
 
-### Finding the APK filter field
+#### Finding the APK filter field
 
 There is more than one regex box on that screen, and only one of them is the right one.
 
@@ -83,8 +118,9 @@ It exists for a phone that cannot easily be plugged into the development machine
 debuggable and unminified, so a problem that only shows up on that particular phone can be
 reproduced on it without a cable.
 
-Skip this if you only want to practise. To add it, repeat step 2 with the same repository URL and
-one different setting — the same field, found the same way:
+Skip this if you only want to practise. To add it, repeat the by-hand steps in section 2 with the
+same repository URL and one different setting — the same field, found the same way (the one-link
+way above adds the real app only):
 
 | Setting | Value |
 |---|---|
